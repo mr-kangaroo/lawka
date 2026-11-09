@@ -15,7 +15,7 @@ The spec is the source of truth: `docs/superpowers/specs/2026-11-09-shift-report
 ## Boundaries (spec §7)
 - `lib/report` is pure: no React, storage or network.
 - The Zustand store (`store/shift.ts`) is the only place state changes.
-- The API route (`app/api/process-note/route.ts`) is the only code that knows about Gemini. `GOOGLE_GENERATIVE_AI_API_KEY` is server-only; never commit or print it.
+- Only `lib/ai/gemini.ts` (server-only) talks to Gemini; it is used by the API route (`app/api/process-note/route.ts`) and `scripts/measure-models.ts`. The server never derives HH:MM from ISO timestamps (it may run in UTC); the client sends `startHHMM`/`nowHHMM`/`noteHHMM` in `AiContext`. `GOOGLE_GENERATIVE_AI_API_KEY` is server-only; never commit or print it.
 - Tiptap is confined to `components/report/rich-editor.tsx` and `lib/report/rich.ts`.
 
 ## Conventions

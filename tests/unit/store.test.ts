@@ -209,6 +209,58 @@ describe('store', () => {
     expect(useShift.getState().shift.id).toBe('demo-shift')
   })
 
+  it('persisted shift without sections falls back to the demo shift', async () => {
+    const s = createEmptyShift(new Date(2026, 10, 8, 20, 0), createIdGen('p'))
+    const { sections: _omit, ...noSections } = s
+    void _omit
+    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: noSections, tab: 'journal' }, version: 1 }))
+    vi.resetModules()
+    const { useShift } = await import('@/store/shift')
+    expect(useShift.getState().shift.id).toBe('demo-shift')
+  })
+
+  it('persisted shift with non-array gaps or questions falls back to the demo shift', async () => {
+    const s = createEmptyShift(new Date(2026, 10, 8, 20, 0), createIdGen('p'))
+    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: { ...s, gaps: {} }, tab: 'journal' }, version: 1 }))
+    vi.resetModules()
+    const a = await import('@/store/shift')
+    expect(a.useShift.getState().shift.id).toBe('demo-shift')
+    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: { ...s, questions: null }, tab: 'journal' }, version: 1 }))
+    vi.resetModules()
+    const b = await import('@/store/shift')
+    expect(b.useShift.getState().shift.id).toBe('demo-shift')
+  })
+
+  it('notes persisted as pending rehydrate as failed so they can be retried', async () => {
+    const s = createEmptyShift(new Date(2026, 10, 8, 20, 0), createIdGen('p'))
+    const base = { createdAt: s.startedAt, attachments: [], routedTo: [] }
+    s.notes.push(
+      { ...base, id: 'n-pending', text: 'a', status: 'pending' },
+      { ...base, id: 'n-done', text: 'b', status: 'processed' },
+    )
+    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: s, tab: 'report' }, version: 1 }))
+    vi.resetModules()
+    const { useShift } = await import('@/store/shift')
+    const st = useShift.getState()
+    expect(st.shift.id).toBe(s.id)
+    expect(st.tab).toBe('report')
+    expect(st.shift.notes.map((n) => n.status)).toEqual(['failed', 'processed'])
+  })
+
+  it('a throwing localStorage.setItem (quota) does not break actions', async () => {
+    const { useShift } = await load()
+    const spy = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError')
+    })
+    try {
+      expect(() => useShift.getState().confirmNoIncidents()).not.toThrow()
+      expect(spy).toHaveBeenCalled()
+      expect(useShift.getState().shift.noIncidentsConfirmed).toBe(true)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
   it('actions are no-ops after send() except newShift/loadDemo/setTab', async () => {
     const { useShift, req } = await load()
     useShift.getState().send()
@@ -263,5 +315,17 @@ describe('buildContext', () => {
     expect(ctx.startHHMM).toBe('20:00')
     expect(ctx.nowHHMM).toBe('22:05')
     expect(ctx.shiftDate).toBe('2026-11-08')
+  })
+
+  it("buildContext sets noteHHMM from the note's local time", async () => {
+    const { buildContext } = await import('@/lib/ai/client')
+    const { fresh } = await load()
+    const note = {
+      id: 'n1', createdAt: new Date(2026, 10, 8, 23, 7).toISOString(), text: 't', attachments: [],
+      status: 'pending' as const, routedTo: [],
+    }
+    const ctx = buildContext(fresh(), note, new Date(2026, 10, 8, 23, 40))
+    expect(ctx.noteHHMM).toBe('23:07')
+    expect(ctx.nowHHMM).toBe('23:40')
   })
 })

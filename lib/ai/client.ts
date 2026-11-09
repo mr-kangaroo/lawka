@@ -10,6 +10,8 @@ export type AiContext = {
   shiftDate: string
   startHHMM: string
   nowHHMM: string
+  /** The note's local HH:MM, computed on the client (the server may run in UTC). */
+  noteHHMM: string
   incidents: Array<{
     id: string
     number: number
@@ -65,6 +67,7 @@ export function buildContext(shift: Shift, note: Note, now: Date): AiContext {
     shiftDate: shift.date,
     startHHMM: formatHHMM(shift.startedAt),
     nowHHMM: formatHHMM(now.toISOString()),
+    noteHHMM: formatHHMM(note.createdAt),
     incidents,
     sections,
     openGaps: open.map(toRef),
@@ -81,6 +84,7 @@ export async function requestOperations(
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ note, context }),
+    signal: AbortSignal.timeout(25000),
   })
   if (!res.ok) throw new Error(`process-note failed: ${res.status}`)
   const json = await res.json()
