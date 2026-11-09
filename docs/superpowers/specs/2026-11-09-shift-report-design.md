@@ -95,7 +95,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 │   ┌ ✦ AI question                ┐  │ Podsumowanie                                                        │
 │   │ [Tak, zapisz jako incydent]  │  │ Pełna sala, kolejka do 22:30…                                       │
 │   │ [Nie, tylko informacja]      │  │ Incydenty                                                           │
-│   │ [ …albo dopisz, co się stało ]│ │ ┌ #1 [Bójka ⌕] [🕐 22:40 ▾] [📍 Bar główny ▾]        dodano o 22:41 ┐ │
+│   │ [ …albo dopisz, co się stało ]│ │ ┌ #1 Bójka · 22:40 · Bar główny  (dotted underlines)   dodano o 22:41 ┐ │
 │   └──────────────────────────────┘  │ │ description · Q—A lines · [IMG] · gap chips                      │ │
 │ 02:52 note  ⟳ porządkuję…           │ └──────────────────────────────────────────────────────────────────┘ │
 │ ┌ Nowa notatka…     📎 [Dodaj ↵] ┐  │ [+ Dodaj incydent]                                                  │
@@ -128,8 +128,8 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 
 ### 4.4 Report: incidents
 - Shown under **Incydenty** as bordered blocks, in time order. The display number (#1, #2, …) follows the order on screen.
-- **Header row:**
-  - **Type:** a **searchable combobox**. Typing filters a predefined list with the matches in bold. The last option is always "+ Użyj „<query>" jako własnego typu" (use the query as a custom type). Predefined types:
+- **Header row:** a sentence-like line, **`#1 Bójka · 22:40 · Bar główny`**. Each value is **plain inline text with a subtle dashed underline**, with no boxes, borders or chevrons, so the block reads like part of the document rather than a form. Clicking a value opens its picker in a popover. Empty values show a muted placeholder ("typ", "godzina", "miejsce", for type, time and place) with the same underline.
+  - **Type:** opens a popover with a **search field at the top**. Typing filters a predefined list with the matches in bold. The last option is always "+ Użyj „<query>" jako własnego typu" (use the query as a custom type). Predefined types:
     - Bójka (fight)
     - Agresja słowna (verbal aggression)
     - Kradzież (theft)
@@ -141,8 +141,8 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
     - Odmowa wejścia (refused entry)
     - Interwencja policji (police intervention)
     - Inne (other)
-  - **Time:** a **dropdown time picker** (HH:MM in 5-minute steps, plus typing an exact time). An approximate time is shown in amber as "ok. 01:00" ("around 01:00").
-  - **Place:** a **dropdown** of the venue's areas, plus "Inne…" (other) for free text:
+  - **Time:** opens a **time picker popover** (HH:MM in 5-minute steps, plus typing an exact time). An approximate time is shown in amber, with an amber underline, as "ok. 01:00" ("around 01:00").
+  - **Place:** opens a popover listing the venue's areas, plus "Inne…" (other) for free text:
     - Wejście / bramka (entrance / door)
     - Szatnia (cloakroom)
     - Bar główny (main bar)
