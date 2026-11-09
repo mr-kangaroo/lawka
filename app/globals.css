@@ -134,3 +134,11 @@
     @apply font-sans;
   }
 }
+/* Tiptap placeholder (RichEditor `placeholder`): muted text in an empty editor. */
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--muted-foreground);
+}
