@@ -54,6 +54,19 @@ export function useSpeech() {
     setListening(false)
   }, [])
 
+  /** Stops and discards pending results (submit, typing): a late `onresult` must not touch the text. */
+  const cancel = useCallback(() => {
+    const rec = recRef.current
+    recRef.current = null
+    if (rec) {
+      rec.onresult = null
+      rec.onerror = null
+      rec.onend = null
+      rec.abort()
+    }
+    setListening(false)
+  }, [])
+
   const start = useCallback(
     ({ base, onText, onDenied }: StartOptions) => {
       const Ctor = getCtor()
@@ -73,7 +86,8 @@ export function useSpeech() {
         onText(mergeDictation(base, finalText, interim))
       }
       const finish = () => {
-        if (recRef.current === rec) recRef.current = null
+        if (recRef.current !== rec) return
+        recRef.current = null
         setListening(false)
       }
       rec.onerror = (e) => {
@@ -97,10 +111,16 @@ export function useSpeech() {
     window.addEventListener('blur', onBlur)
     return () => {
       window.removeEventListener('blur', onBlur)
-      recRef.current?.abort()
+      const rec = recRef.current
       recRef.current = null
+      if (rec) {
+        rec.onresult = null
+        rec.onerror = null
+        rec.onend = null
+        rec.abort()
+      }
     }
   }, [stop])
 
-  return { supported, listening, start, stop }
+  return { supported, listening, start, stop, cancel }
 }

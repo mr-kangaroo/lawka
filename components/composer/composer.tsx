@@ -79,7 +79,7 @@ export function Composer({ placeholder, compactPlaceholder, replyTo, onReplyEnd 
 
   function submit() {
     if (!canSubmit) return
-    speech.stop()
+    speech.cancel()
     void submitNote(text, attachments, replyQuestion ? { replyTo: replyQuestion.id } : undefined)
     setText('')
     setAttachments([])
@@ -146,7 +146,7 @@ export function Composer({ placeholder, compactPlaceholder, replyTo, onReplyEnd 
             disabled={sent}
             placeholder={isPhone && compactPlaceholder ? compactPlaceholder : placeholder}
             onChange={(e) => {
-              speech.stop() // typing mid-dictation would be overwritten by the next result
+              speech.cancel() // typing mid-dictation would be overwritten by the next result
               setText(e.target.value)
             }}
             onKeyDown={onKeyDown}
