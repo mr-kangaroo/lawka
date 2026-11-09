@@ -35,7 +35,11 @@ function firstTime(text: string): string | null {
   return null
 }
 
-/** Scripted operations used when Gemini fails; null when nothing matches (the note then becomes `failed`). */
+/**
+ * Scripted operations used when Gemini fails; null when nothing matches (the note then becomes `failed`).
+ * A reply to an AI question never fails: "Tak…" files the original note as an "Inne" incident, anything
+ * else returns [] so the question resolves and the reply is processed.
+ */
 export function fallbackOperations(note: Note, context: AiContext): Operation[] | null {
   const gap = context.answeringGap
   if (gap) {
@@ -45,6 +49,12 @@ export function fallbackOperations(note: Note, context: AiContext): Operation[] 
     else if (gap.target.kind === 'section') ops.push({ op: 'appendToSection', key: gap.target.key, paragraphs: [text] })
     ops.push({ op: 'resolveGap', gapId: gap.id })
     return ops
+  }
+
+  if (note.replyTo) {
+    const q = context.answeringQuestion
+    if (!q || !/^tak\b/.test(normalizeForSearch(note.text).trim())) return []
+    return [{ op: 'addIncident', type: 'Inne', time: { hhmm: q.noteHHMM, approx: true }, description: q.noteText }]
   }
 
   const normalized = normalizeForSearch(note.text)

@@ -338,6 +338,27 @@ describe('buildContext', () => {
     expect(ctx.shiftDate).toBe('2026-11-08')
   })
 
+  it('buildContext includes answeringQuestion for replyTo notes', async () => {
+    const { buildContext } = await import('@/lib/ai/client')
+    const { fresh } = await load()
+    const s = fresh()
+    s.notes.push({
+      id: 'orig', createdAt: new Date(2026, 10, 9, 1, 48).toISOString(), text: 'znowu ten typ przy szatni',
+      attachments: [], status: 'processed', routedTo: [],
+    })
+    s.questions.push({ id: 'q1', noteId: 'orig', question: 'Czy to był incydent?', options: ['Tak', 'Nie'], status: 'open' })
+    const reply = {
+      id: 'r1', createdAt: new Date(2026, 10, 9, 2, 5).toISOString(), text: 'Tak', attachments: [],
+      status: 'pending' as const, routedTo: [], replyTo: 'q1',
+    }
+    expect(buildContext(s, reply, new Date(2026, 10, 9, 2, 5)).answeringQuestion).toEqual({
+      id: 'q1', question: 'Czy to był incydent?', options: ['Tak', 'Nie'],
+      noteText: 'znowu ten typ przy szatni', noteHHMM: '01:48',
+    })
+    const plain = { ...reply, replyTo: undefined }
+    expect(buildContext(s, plain, new Date(2026, 10, 9, 2, 5))).not.toHaveProperty('answeringQuestion')
+  })
+
   it("buildContext sets noteHHMM from the note's local time", async () => {
     const { buildContext } = await import('@/lib/ai/client')
     const { fresh } = await load()
