@@ -32,3 +32,15 @@ export function formatHHMM(iso: ISO): string {
   const d = new Date(iso)
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
+
+const SLOT_MINUTES = 5
+const DAY_MINUTES = 24 * 60
+
+/** A full day of HH:MM slots in 5-minute steps, from the shift start (rounded down) past midnight. */
+export function timeSlots(startHHMM: string): string[] {
+  const first = toMinutes(startHHMM) - (toMinutes(startHHMM) % SLOT_MINUTES)
+  return Array.from({ length: DAY_MINUTES / SLOT_MINUTES }, (_, i) => {
+    const m = (first + i * SLOT_MINUTES) % DAY_MINUTES
+    return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+  })
+}

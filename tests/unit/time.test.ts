@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatHHMM, minutesFromShiftStart, parseHHMM } from '@/lib/report/time'
+import { formatHHMM, minutesFromShiftStart, parseHHMM, timeSlots } from '@/lib/report/time'
 
 describe('parseHHMM', () => {
   it('normalizes accepted formats', () => {
@@ -37,5 +37,26 @@ describe('formatHHMM', () => {
   it('formats local time of an ISO string', () => {
     const d = new Date(2026, 10, 9, 1, 5)
     expect(formatHHMM(d.toISOString())).toBe('01:05')
+  })
+})
+
+describe('timeSlots', () => {
+  it('lists a full day in 5-minute steps from the shift start, wrapping past midnight', () => {
+    const slots = timeSlots('20:00')
+    expect(slots).toHaveLength(288)
+    expect(slots.slice(0, 3)).toEqual(['20:00', '20:05', '20:10'])
+    expect(slots.slice(46, 50)).toEqual(['23:50', '23:55', '00:00', '00:05'])
+    expect(slots[slots.length - 1]).toBe('19:55')
+    expect(new Set(slots).size).toBe(288)
+  })
+  it('rounds a start that is off the 5-minute grid down to it', () => {
+    const slots = timeSlots('21:13')
+    expect(slots[0]).toBe('21:10')
+    expect(slots[slots.length - 1]).toBe('21:05')
+    expect(slots).toHaveLength(288)
+  })
+  it('handles a start right before midnight', () => {
+    const slots = timeSlots('23:58')
+    expect(slots.slice(0, 3)).toEqual(['23:55', '00:00', '00:05'])
   })
 })
