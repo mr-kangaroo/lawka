@@ -14,7 +14,7 @@ const HEADING_ID = 'incidents-label'
 /**
  * The Incydenty part of the report (spec §4.4): the heading row, then the incident blocks in time
  * order. With incidents, "+ Dodaj incydent" sits on the right of the heading. Without any, the
- * section looks like the others: "✓ Brak zdarzeń" on the right confirms it, and "+ Dodaj incydent"
+ * section looks like the others: "✓ Brak zdarzeń" on the right confirms it, and "Dodaj incydent" (dotted underline)
  * follows the empty-state text inline.
  */
 export function Incidents() {
@@ -77,9 +77,9 @@ export function Incidents() {
             <Button
               variant="link"
               onClick={() => setAdded(addEmptyIncident())}
-              className="relative h-auto p-0 align-baseline text-[15px] font-normal text-foreground/80 hover:text-foreground before:absolute before:-inset-x-1 before:-inset-y-2.5"
+              className="relative h-auto rounded-none border-0 border-b border-dotted border-b-foreground/40 p-0 align-baseline text-[15px] leading-tight font-normal text-foreground/80 no-underline before:absolute before:-inset-x-1 before:-inset-y-2.5 hover:border-b-foreground hover:text-foreground hover:no-underline"
             >
-              + Dodaj incydent
+              Dodaj incydent
             </Button>
           </>
         )}
