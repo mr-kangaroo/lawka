@@ -46,8 +46,8 @@ export function AppShell() {
       className="h-dvh gap-0"
     >
       <AppHeader onSend={() => setSendOpen(true)} />
-      <main data-scroll-container className="min-h-0 flex-1 overflow-y-auto px-4 py-1 sm:p-6">
-        <TabsContent value="journal" className="text-[15px] leading-relaxed">
+      <main data-scroll-container className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-1 sm:p-6">
+        <TabsContent value="journal" className="flex flex-col text-[15px] leading-relaxed">
           <Journal />
         </TabsContent>
         <TabsContent value="report" className="text-[15px]">

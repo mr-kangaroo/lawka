@@ -88,7 +88,7 @@ export function Incidents() {
   return (
     <section id="incidents" aria-labelledby={HEADING_ID} className="mt-5 scroll-mt-6">
       <div className="mb-1.5 flex items-center justify-between gap-3">
-        <h3 id={HEADING_ID} className="text-[15px] font-semibold text-foreground">
+        <h3 id={HEADING_ID} className="text-lg font-semibold text-foreground">
           Incydenty
         </h3>
         {!readOnly && (
