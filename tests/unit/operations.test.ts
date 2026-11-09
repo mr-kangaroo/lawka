@@ -131,6 +131,31 @@ describe('applyOperations', () => {
     expect(out.incidents).toEqual([])
   })
 
+  it('addGap targeting an unknown incident id is skipped', () => {
+    const out = apply(shift({ incidents: [incident()] }), [
+      { op: 'addGap', target: { kind: 'incident', incidentId: 'INCIDENT_ID_PLACEHOLDER' }, question: 'Czy wezwano policję?', weight: 'required' },
+      { op: 'addGap', target: { kind: 'incident', incidentId: 'i1' }, question: 'Świadkowie?', weight: 'optional' },
+    ])
+    expect(out.gaps).toHaveLength(1)
+    expect(out.gaps[0].target).toEqual({ kind: 'incident', incidentId: 'i1' })
+  })
+
+  it('"new:N" refers to the N-th incident added in the same batch', () => {
+    const out = apply(shift(), [
+      add,
+      { ...add, type: 'Kradzież' },
+      { op: 'addGap', target: { kind: 'incident', incidentId: 'new:1' }, question: 'Czy wezwano policję?', weight: 'required' },
+      { op: 'appendToIncident', incidentId: 'new:2', text: 'Skradziono telefon.' },
+      { op: 'updateIncident', incidentId: 'new:2', location: 'Szatnia' },
+      { op: 'addGap', target: { kind: 'incident', incidentId: 'new:3' }, question: 'Nie istnieje?', weight: 'required' },
+    ])
+    const [first, second] = out.incidents
+    expect(out.gaps).toHaveLength(1)
+    expect(out.gaps[0].target).toEqual({ kind: 'incident', incidentId: first.id })
+    expect(docToPlainText(second.description!)).toBe('Dwóch gości się pobiło. Skradziono telefon.')
+    expect(second.location?.value).toBe('Szatnia')
+  })
+
   it('routedTo lists applied targets in order', () => {
     const out = apply(shift(), [add, { op: 'appendToSection', key: 'maintenance', paragraphs: ['Awaria'] }])
     expect(out.notes[0].routedTo).toEqual(['Incydent #1', 'Usterki i sprzęt'])

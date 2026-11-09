@@ -130,6 +130,13 @@ export function applyOperations(
     }
     return sec
   }
+  /** Ids of incidents added in this batch; the model refers to them as "new:1", "new:2", ... */
+  const createdIds: string[] = []
+  const resolveIncident = (ref: string): Incident | undefined => {
+    const m = /^new:(\d+)$/.exec(ref)
+    const id = m ? createdIds[Number(m[1]) - 1] : ref
+    return id === undefined ? undefined : s.incidents.find((i) => i.id === id)
+  }
   const setField = <T>(current: Field<T> | null, value: T): Field<T> | undefined =>
     current === null || current.prov.by !== 'manager' ? aiField(value) : undefined
 
@@ -148,12 +155,13 @@ export function applyOperations(
         }
         giveAttachmentsToIncident(inc)
         s.incidents.push(inc)
+        createdIds.push(inc.id)
         s.noIncidentsConfirmed = false
         touch({ kind: 'incident', id: inc.id })
         break
       }
       case 'updateIncident': {
-        const inc = s.incidents.find((i) => i.id === op.incidentId)
+        const inc = resolveIncident(op.incidentId)
         if (!inc) break
         giveAttachmentsToIncident(inc)
         let changed = false
@@ -176,7 +184,7 @@ export function applyOperations(
         break
       }
       case 'appendToIncident': {
-        const inc = s.incidents.find((i) => i.id === op.incidentId)
+        const inc = resolveIncident(op.incidentId)
         if (!inc) break
         inc.description = appendSentence(inc.description ?? emptyDoc(), op.text, attrs())
         addSource(inc)
@@ -201,16 +209,22 @@ export function applyOperations(
         break
       }
       case 'addGap': {
+        let target = op.target
+        if (target.kind === 'incident') {
+          const inc = resolveIncident(target.incidentId)
+          if (!inc) break
+          target = { ...target, incidentId: inc.id }
+        }
         const dup = s.gaps.some(
           (g) =>
             g.status === 'open' &&
             g.question === op.question &&
-            JSON.stringify(g.target) === JSON.stringify(op.target),
+            JSON.stringify(g.target) === JSON.stringify(target),
         )
         if (dup) break
         const gap: Gap = {
           id: newId(),
-          target: op.target,
+          target,
           question: op.question,
           weight: op.weight,
           status: 'open',
