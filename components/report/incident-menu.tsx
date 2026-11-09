@@ -15,6 +15,11 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useShift } from '@/store/shift'
 
+/** "Usunięto incydent" with "Cofnij"; one toast id, since `lastRemoved` holds a single incident. */
+export function toastRemoved(undo: () => void) {
+  toast('Usunięto incydent', { id: REMOVED_TOAST, duration: 8000, action: { label: 'Cofnij', onClick: undo } })
+}
+
 /** One toast id: `lastRemoved` holds a single incident, so an older toast's "Cofnij" must not linger. */
 const REMOVED_TOAST = 'incident-removed'
 
@@ -66,11 +71,7 @@ export function IncidentMenu({ incidentId, number, addedAt }: { incidentId: stri
             className="h-8 gap-2 px-2"
             onSelect={() => {
               removeIncident(incidentId)
-              toast('Usunięto incydent', {
-                id: REMOVED_TOAST,
-                duration: 8000,
-                action: { label: 'Cofnij', onClick: () => undoRemove() },
-              })
+              toastRemoved(undoRemove)
             }}
           >
             <Trash2Icon className="size-3.5" />

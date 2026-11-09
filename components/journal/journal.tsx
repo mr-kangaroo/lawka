@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef } from 'react'
 import { NotebookPenIcon } from 'lucide-react'
 import { routeLabel } from '@/lib/report/operations'
 import { useShift } from '@/store/shift'
-import { isAwaitingAnswer } from './ai-question-card'
 import { JournalEntry } from './journal-entry'
 
 /** Shown in the centre of an empty journal (a new shift). */
@@ -29,10 +28,6 @@ export function Journal() {
   const listRef = useRef<HTMLOListElement>(null)
   const endRef = useRef<HTMLDivElement>(null)
 
-  const waitingNoteIds = useMemo(
-    () => new Set(shift.sentAt ? [] : shift.questions.filter((q) => isAwaitingAnswer(shift, q)).map((q) => q.noteId)),
-    [shift],
-  )
   const routeLabels = useMemo(
     () =>
       new Map(
@@ -86,7 +81,6 @@ export function Journal() {
           <JournalEntry
             key={note.id}
             note={note}
-            waiting={waitingNoteIds.has(note.id)}
             routeLabels={routeLabels.get(note.id) ?? []}
           />
         ))}

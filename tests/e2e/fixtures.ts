@@ -3,10 +3,9 @@ import { test as base, expect, type Page } from '@playwright/test'
 type Operation = Record<string, unknown>
 
 /** Fixed model output per note, so the e2e never depends on the real AI. */
-function operationsFor(body: { note: { text: string; replyTo?: string; answersGapId?: string } }): Operation[] {
-  const { text, replyTo, answersGapId } = body.note
+function operationsFor(body: { note: { text: string; answersGapId?: string } }): Operation[] {
+  const { text, answersGapId } = body.note
   if (answersGapId) return [{ op: 'resolveGap', gapId: answersGapId }]
-  if (replyTo) return []
   if (/awantura/i.test(text)) {
     return [
       {

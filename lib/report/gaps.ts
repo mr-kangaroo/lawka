@@ -37,9 +37,21 @@ function incidentFieldGap(inc: Incident, field: IncidentField): DerivedGap {
   }
 }
 
+export const SUSPECTED_QUESTION = 'Czy to był incydent?'
+
 export function ruleGaps(shift: Shift): DerivedGap[] {
   const gaps: DerivedGap[] = []
   for (const inc of shift.incidents) {
+    if (inc.suspected) {
+      gaps.push({
+        id: `rule:${inc.id}:suspected`,
+        target: { kind: 'incident', incidentId: inc.id },
+        question: SUSPECTED_QUESTION,
+        weight: 'required',
+        origin: 'rule',
+      })
+      continue // its fields are asked for once it is confirmed
+    }
     for (const f of FIELDS) if (fieldMissing(inc, f)) gaps.push(incidentFieldGap(inc, f))
   }
   if (shift.incidents.length === 0 && !shift.noIncidentsConfirmed) {
@@ -108,5 +120,5 @@ export function requiredCount(shift: Shift): number {
 
 export function fieldGap(shift: Shift, incidentId: string, field: IncidentField): DerivedGap | undefined {
   const inc = shift.incidents.find((i) => i.id === incidentId)
-  return inc && fieldMissing(inc, field) ? incidentFieldGap(inc, field) : undefined
+  return inc && !inc.suspected && fieldMissing(inc, field) ? incidentFieldGap(inc, field) : undefined
 }

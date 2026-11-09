@@ -53,6 +53,7 @@ export const OperationSchema = z.discriminatedUnion('op', [
     time: EventTimeSchema.optional(),
     location: z.string().optional(),
     description: z.string(),
+    suspected: z.boolean().optional(),
   }),
   z.object({
     op: z.literal('updateIncident'),
@@ -72,7 +73,6 @@ export const OperationSchema = z.discriminatedUnion('op', [
     suggestion: z.object({ value: z.string(), reason: z.string() }).optional(),
   }),
   z.object({ op: z.literal('resolveGap'), gapId: z.string() }),
-  z.object({ op: z.literal('askQuestion'), question: z.string(), options: z.array(z.string()) }),
 ])
 
 export const OperationsResponseSchema = z.object({ operations: z.array(OperationSchema) })
@@ -94,11 +94,16 @@ export function sortIncidents(shift: Shift): Incident[] {
   return [...timed, ...untimed]
 }
 
-/** Label for a routing target: "Incydent #N" (current order) or the section label; null if the incident was removed. */
+/**
+ * Label for a routing target: "Incydent #N" (current order; "Możliwy incydent #N" until confirmed)
+ * or the section label; null if the incident was removed.
+ */
 export function routeLabel(shift: Shift, target: RouteTarget): string | null {
   if (target.kind === 'section') return SECTION_LABELS[target.key]
-  const index = sortIncidents(shift).findIndex((i) => i.id === target.incidentId)
-  return index < 0 ? null : `Incydent #${index + 1}`
+  const sorted = sortIncidents(shift)
+  const index = sorted.findIndex((i) => i.id === target.incidentId)
+  if (index < 0) return null
+  return `${sorted[index].suspected ? 'Możliwy incydent' : 'Incydent'} #${index + 1}`
 }
 
 export function applyOperations(
@@ -173,6 +178,7 @@ export function applyOperations(
           description: description ? { type: 'doc', content: paragraphsToBlocks([description], attrs()) } : null,
           attachments: [],
           sourceNoteIds: [noteId],
+          ...(op.suspected ? { suspected: true } : {}),
         }
         giveAttachmentsToIncident(inc)
         s.incidents.push(inc)
@@ -261,9 +267,6 @@ export function applyOperations(
         if (gap) gap.status = 'answered'
         break
       }
-      case 'askQuestion':
-        s.questions.push({ id: newId(), noteId, question: op.question, options: op.options, status: 'open' })
-        break
     }
   }
 
@@ -275,10 +278,6 @@ export function applyOperations(
   if (note) {
     note.status = 'processed'
     note.routedTo = targets
-    if (note.replyTo) {
-      const q = s.questions.find((x) => x.id === note.replyTo)
-      if (q) q.status = 'answered'
-    }
     if (note.answersGapId) {
       const g = s.gaps.find((x) => x.id === note.answersGapId)
       if (g) {

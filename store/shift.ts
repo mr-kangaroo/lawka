@@ -25,7 +25,7 @@ export type ShiftState = {
   submitNote(
     text: string,
     attachments: Attachment[],
-    opts?: { replyTo?: string; answersGapId?: string },
+    opts?: { answersGapId?: string },
   ): Promise<void>
   retryNote(noteId: string): Promise<void>
 
@@ -36,6 +36,8 @@ export type ShiftState = {
   setIncidentDescription(incidentId: string, doc: RichDoc): void
   addEmptyIncident(): string
   duplicateIncident(incidentId: string): void
+  /** "Tak, to incydent": the AI's suspected incident is confirmed. */
+  confirmIncident(incidentId: string): void
   removeIncident(incidentId: string): void
   undoRemove(): void
   confirmNoIncidents(): void
@@ -62,8 +64,7 @@ function validShape(v: unknown): v is { shift: Shift; tab?: Tab } {
     typeof shift.sections === 'object' &&
     shift.sections !== null &&
     !Array.isArray(shift.sections) &&
-    Array.isArray(shift.gaps) &&
-    Array.isArray(shift.questions)
+    Array.isArray(shift.gaps)
   )
 }
 
@@ -147,7 +148,6 @@ export const useShift = create<ShiftState>()(
               createdAt: nowISO(),
               text: trimmed,
               attachments: structuredClone(attachments),
-              ...(opts?.replyTo ? { replyTo: opts.replyTo } : {}),
               ...(opts?.answersGapId ? { answersGapId: opts.answersGapId } : {}),
               ...(get().tab === 'report' || opts?.answersGapId ? { fromReport: true } : {}),
               status: 'pending',
@@ -233,6 +233,13 @@ export const useShift = create<ShiftState>()(
           })
         },
 
+        confirmIncident(incidentId) {
+          edit((s) => {
+            const inc = s.incidents.find((i) => i.id === incidentId)
+            if (inc) delete inc.suspected
+          })
+        },
+
         removeIncident(incidentId) {
           const cur = get().shift
           if (cur.sentAt) return
@@ -293,8 +300,9 @@ export const useShift = create<ShiftState>()(
     },
     {
       name: 'lawka:v1',
-      // v2: Note.routedTo holds RouteTarget objects (v1 stored label strings). Older data resets to the demo.
-      version: 2,
+      // v2: Note.routedTo holds RouteTarget objects (v1 stored label strings).
+      // v3: AI questions replaced by suspected incidents. Older data resets to the demo.
+      version: 3,
       storage: safeStorage,
       partialize: (s) => ({ shift: s.shift, tab: s.tab }),
       migrate: () => ({ shift: createDemoShift(), tab: 'journal' as Tab }),

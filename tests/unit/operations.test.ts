@@ -13,7 +13,7 @@ function note(over: Partial<Note> = {}): Note {
 function shift(over: Partial<Shift> = {}): Shift {
   return {
     id: 's1', date: '2026-11-08', startedAt: '2026-11-08T20:00:00.000Z', authorId: 'p1',
-    notes: [note()], incidents: [], sections: {}, gaps: [], questions: [], noIncidentsConfirmed: true, ...over,
+    notes: [note()], incidents: [], sections: {}, gaps: [], noIncidentsConfirmed: true, ...over,
   }
 }
 const apply = (s: Shift, ops: Operation[], noteId = 'n1') => applyOperations(s, ops, noteId, now, createIdGen('t'))
@@ -130,15 +130,21 @@ describe('applyOperations', () => {
     expect(out.gaps[0].status).toBe('open')
   })
 
-  it('resolveGap and askQuestion work, unknown gapId is skipped', () => {
+  it('resolveGap works, unknown gapId is skipped', () => {
     const s = shift({ gaps: [{ id: 'g1', target: { kind: 'section', key: 'bar' }, question: 'Q', weight: 'optional', status: 'open' }] })
     const out = apply(s, [
       { op: 'resolveGap', gapId: 'g1' },
       { op: 'resolveGap', gapId: 'nope' },
-      { op: 'askQuestion', question: 'Który?', options: ['A', 'B'] },
     ])
     expect(out.gaps[0].status).toBe('answered')
-    expect(out.questions).toEqual([{ id: 't-1', noteId: 'n1', question: 'Który?', options: ['A', 'B'], status: 'open' }])
+  })
+
+  it('addIncident keeps the suspected flag; askQuestion is no longer an operation', () => {
+    const out = apply(shift(), [{ ...add, suspected: true } as Operation])
+    expect(out.incidents[0].suspected).toBe(true)
+    expect(apply(shift(), [add]).incidents[0]).not.toHaveProperty('suspected')
+    expect(routeLabel(out, out.notes[0].routedTo[0])).toBe('Możliwy incydent #1')
+    expect(OperationsResponseSchema.safeParse({ operations: [{ op: 'askQuestion', question: '?', options: [] }] }).success).toBe(false)
   })
 
   it('unknown incidentId is skipped and the note is still processed', () => {
@@ -241,14 +247,12 @@ describe('applyOperations', () => {
     expect(out.sections.kitchen?.attachments).toEqual([att])
   })
 
-  it('replyTo note marks its question answered; answersGapId note marks its gap answered', () => {
+  it('answersGapId note marks its gap answered', () => {
     const s = shift({
-      notes: [note({ replyTo: 'q1', answersGapId: 'g1' })],
-      questions: [{ id: 'q1', noteId: 'n0', question: '?', options: [], status: 'open' }],
+      notes: [note({ answersGapId: 'g1' })],
       gaps: [{ id: 'g1', target: { kind: 'section', key: 'bar' }, question: 'Q', weight: 'optional', status: 'open' }],
     })
     const out = apply(s, [])
-    expect(out.questions[0].status).toBe('answered')
     expect(out.gaps[0]).toMatchObject({ status: 'answered', answeredByNoteId: 'n1' })
   })
 
@@ -280,7 +284,7 @@ describe('OperationsResponseSchema', () => {
   })
   it('accepts all valid ops', () => {
     const r = OperationsResponseSchema.safeParse({
-      operations: [add, { op: 'askQuestion', question: 'q', options: [] }, { op: 'appendToIncident', incidentId: 'i', text: 't' }],
+      operations: [add, { ...add, suspected: true }, { op: 'appendToIncident', incidentId: 'i', text: 't' }],
     })
     expect(r.success).toBe(true)
   })

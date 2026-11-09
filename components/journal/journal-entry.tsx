@@ -7,14 +7,13 @@ import type { Note } from '@/lib/report/types'
 import { useShift } from '@/store/shift'
 import { AttachmentChip } from './attachment-chip'
 
-function EntryStatus({ note, waiting, routeLabels }: EntryProps) {
+function EntryStatus({ note, routeLabels }: EntryProps) {
   const retryNote = useShift((s) => s.retryNote)
   const sent = useShift((s) => Boolean(s.shift.sentAt))
 
   // After sending nothing is processed any more: no spinner, no "Ponów".
   if (sent && note.status !== 'processed')
     return <span className="text-[13px] text-muted-foreground">nie przetworzono</span>
-  if (waiting) return <span className="text-[13px] text-required">czeka na Twoją odpowiedź ↓</span>
   if (note.status === 'pending')
     return (
       <span className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground italic">
@@ -43,15 +42,13 @@ function EntryStatus({ note, waiting, routeLabels }: EntryProps) {
 
 export type EntryProps = {
   note: Note
-  /** An open AI question about this note is awaiting an answer. */
-  waiting: boolean
   /** Current labels of `note.routedTo` (see `routeLabel`), removed incidents already skipped. */
   routeLabels: string[]
 }
 
 /** One journal note: time column, text, attachment chips and the status line (spec §4.2). */
-export function JournalEntry({ note, waiting, routeLabels }: EntryProps) {
-  const hasMeta = note.attachments.length > 0 || waiting || note.status !== 'processed' || routeLabels.length > 0
+export function JournalEntry({ note, routeLabels }: EntryProps) {
+  const hasMeta = note.attachments.length > 0 || note.status !== 'processed' || routeLabels.length > 0
   return (
     <li className="grid grid-cols-[44px_minmax(0,1fr)] gap-3 border-b border-border/50 py-3 sm:grid-cols-[56px_minmax(0,1fr)]">
       {note.fromReport ? (
@@ -68,7 +65,7 @@ export function JournalEntry({ note, waiting, routeLabels }: EntryProps) {
             {note.attachments.map((a) => (
               <AttachmentChip key={a.id} attachment={a} />
             ))}
-            <EntryStatus note={note} waiting={waiting} routeLabels={routeLabels} />
+            <EntryStatus note={note} routeLabels={routeLabels} />
           </div>
         )}
       </div>

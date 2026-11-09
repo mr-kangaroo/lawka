@@ -30,7 +30,6 @@ const BodySchema = z.object({
     attachments: list(z.unknown()),
     status: z.enum(['pending', 'processed', 'failed']),
     routedTo: list(z.looseObject({ kind: z.enum(['incident', 'section']) })),
-    replyTo: short.optional(),
     answersGapId: short.optional(),
   }),
   context: z.looseObject({
@@ -41,17 +40,7 @@ const BodySchema = z.object({
     incidents: list(z.looseObject({ id: short, number: z.number(), description: z.string().max(TEXT_MAX) })),
     sections: list(z.looseObject({ key: short, text: z.string().max(TEXT_MAX) })),
     openGaps: list(GapRefSchema),
-    openQuestions: list(z.looseObject({ id: short, question: short })),
     answeringGap: GapRefSchema.optional(),
-    answeringQuestion: z
-      .looseObject({
-        id: short,
-        question: short,
-        options: list(short),
-        noteText: z.string().max(NOTE_MAX),
-        noteHHMM: z.string().regex(HHMM),
-      })
-      .optional(),
   }),
 })
 

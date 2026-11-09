@@ -21,7 +21,6 @@ const context = (extra: Partial<AiContext> = {}): AiContext => ({
   incidents: [],
   sections: [],
   openGaps: [],
-  openQuestions: [],
   ...extra,
 })
 
@@ -98,32 +97,9 @@ describe('fallbackOperations', () => {
     ])
   })
 
-  const answeringQuestion = {
-    id: 'q1',
-    question: 'Nie jestem pewien, co się stało przy szatni. Czy to był incydent?',
-    options: ['Tak, zapisz jako incydent', 'Nie, tylko informacja'],
-    noteText: 'znowu ten typ z wczoraj przy szatni, ogarnięte',
-    noteHHMM: '01:48',
-  }
-
-  it('fallback: "Nie, tylko informacja" returns []', () => {
-    const reply = note('Nie, tylko informacja', { replyTo: 'q1' })
-    expect(fallbackOperations(reply, context({ answeringQuestion }))).toEqual([])
-    // A reply never fails, even without the question in context.
-    expect(fallbackOperations(note('tak', { replyTo: 'q1' }), context())).toEqual([])
-    // "takie..." is not a yes.
-    expect(fallbackOperations(note('takie tam', { replyTo: 'q1' }), context({ answeringQuestion }))).toEqual([])
-  })
-
-  it('fallback: "Tak, zapisz jako incydent" creates an incident from the original note', () => {
-    const reply = note('Tak, zapisz jako incydent', { replyTo: 'q1' })
-    expect(fallbackOperations(reply, context({ answeringQuestion, noteHHMM: '02:10' }))).toEqual([
-      {
-        op: 'addIncident',
-        type: 'Inne',
-        time: { hhmm: '01:48', approx: true },
-        description: 'znowu ten typ z wczoraj przy szatni, ogarnięte',
-      },
+  it('a vague time in the note is estimated from its phrase', () => {
+    expect(fallbackOperations(note('po 1 bójka przy barze'), context())).toEqual([
+      { op: 'addIncident', type: 'Bójka', time: { hhmm: '01:30', approx: true, sourcePhrase: 'po 1' }, description: 'po 1 bójka przy barze' },
     ])
   })
 

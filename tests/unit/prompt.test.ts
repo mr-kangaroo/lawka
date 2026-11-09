@@ -16,7 +16,8 @@ describe('prompt', () => {
     expect(p).toMatch(/approx: true/)
     expect(p).toMatch(/sourcePhrase/)
     expect(p).toMatch(/answeringGap/)
-    expect(p).toMatch(/answeringQuestion/)
+    expect(p).toMatch(/suspected: true/)
+    expect(p).not.toMatch(/askQuestion|answeringQuestion/)
     expect(p).toMatch(/updateIncident/)
     expect(p).toContain('"new:1"')
   })
@@ -38,7 +39,6 @@ describe('prompt', () => {
       incidents: [{ id: 'i1', number: 1, type: 'Bójka', description: 'x', managerFields: [] }],
       sections: [],
       openGaps: [],
-      openQuestions: [],
     }
     const p = buildUserPrompt(note, context)
     expect(p).toContain('awantura na bramce 23:10')

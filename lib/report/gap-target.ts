@@ -20,7 +20,8 @@ export function jumpTargetFor(target: DerivedGap['target']): JumpTarget {
     case 'incident':
       return {
         elementId: `incident-${target.incidentId}`,
-        ...(target.field ? { focus: FIELD_FOCUS[target.field] } : {}),
+        // Without a field: an unconfirmed incident's "Tak" button, otherwise the incident itself.
+        focus: target.field ? FIELD_FOCUS[target.field] : '[data-gap-focus="suspected"]',
       }
     case 'section':
       return { elementId: `section-${target.key}`, focus: '[contenteditable="true"], button' }

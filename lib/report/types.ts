@@ -13,7 +13,6 @@ export type Note = {
   createdAt: ISO
   text: string
   attachments: Attachment[]
-  replyTo?: string // AiQuestion.id: the note answers an AiQuestion
   answersGapId?: string // the note answers a question chip
   fromReport?: boolean // written in the Raport tab (a correction or an answer): shown without a time
   status: 'pending' | 'processed' | 'failed'
@@ -33,6 +32,8 @@ export type Incident = {
   description: RichDoc | null
   attachments: Attachment[]
   sourceNoteIds: string[]
+  /** The AI thinks this may be an incident; the manager confirms or removes it in the report. */
+  suspected?: boolean
 }
 
 export type SectionKey =
@@ -78,14 +79,6 @@ export type Gap = {
   answeredByNoteId?: string
 }
 
-export type AiQuestion = {
-  id: string
-  noteId: string
-  question: string
-  options: string[]
-  status: 'open' | 'answered'
-}
-
 export type Person = {
   id: string
   name: string
@@ -104,6 +97,5 @@ export type Shift = {
   incidents: Incident[]
   sections: Partial<Record<SectionKey, Section>>
   gaps: Gap[]
-  questions: AiQuestion[]
   noIncidentsConfirmed: boolean // "Brak incydentów" clicked
 }

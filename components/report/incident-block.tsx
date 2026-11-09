@@ -1,6 +1,8 @@
 'use client'
 
+import { cn } from 'cn'
 import { useEffect, useRef, useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { AttachmentChip } from '@/components/journal/attachment-chip'
 import type { DerivedGap } from '@/lib/report/gaps'
 import { emptyDoc, isDocEmpty } from '@/lib/report/rich'
@@ -8,7 +10,7 @@ import { formatHHMM } from '@/lib/report/time'
 import type { Incident } from '@/lib/report/types'
 import { useShift } from '@/store/shift'
 import { GapChip } from './gap-chip'
-import { IncidentMenu } from './incident-menu'
+import { IncidentMenu, toastRemoved } from './incident-menu'
 import { InlineField } from './inline-field'
 import { PlacePicker } from './place-picker'
 import { RichEditor } from './rich-editor'
@@ -59,6 +61,10 @@ export function IncidentBlock({
 }: IncidentBlockProps) {
   const setIncidentField = useShift((s) => s.setIncidentField)
   const setIncidentDescription = useShift((s) => s.setIncidentDescription)
+  const confirmIncident = useShift((s) => s.confirmIncident)
+  const removeIncident = useShift((s) => s.removeIncident)
+  const undoRemove = useShift((s) => s.undoRemove)
+  const suspected = !!incident.suspected
   // An incident added by hand starts with its type picker open (focus goes to its search).
   const [open, setOpen] = useState<HeaderField | null>(autoFocus ? 'type' : null)
   const rootRef = useRef<HTMLElement>(null)
@@ -99,11 +105,17 @@ export function IncidentBlock({
     <section
       ref={rootRef}
       id={`incident-${incident.id}`}
-      aria-label={`Incydent #${number}`}
-      className="group/incident flex scroll-mt-6 flex-col gap-1.5 rounded-[10px] border bg-card/40 px-3.5 py-3 text-sm leading-[1.55]"
+      aria-label={`${suspected ? 'Możliwy incydent' : 'Incydent'} #${number}`}
+      className={cn(
+        'group/incident flex scroll-mt-6 flex-col gap-1.5 rounded-[10px] border bg-card/40 px-3.5 py-3 text-sm leading-[1.55]',
+        suspected && 'border-dashed border-required-border',
+      )}
     >
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span className="mr-0.5 font-semibold text-foreground">#{number}</span>
+        <span className={cn('mr-0.5 font-semibold', suspected ? 'text-required' : 'text-foreground')}>
+          #{number}
+          {suspected && <span aria-hidden>?</span>}
+        </span>
         <InlineField
           label={`Typ zdarzenia: ${type ?? 'brak'}`}
           value={type}
@@ -180,6 +192,38 @@ export function IncidentBlock({
           />
         )}
       </div>
+
+      {suspected && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-1">
+          <span className="text-[13px] text-required">
+            {readOnly ? 'Niepotwierdzony incydent' : 'Czy to był incydent?'}
+          </span>
+          {!readOnly && (
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                data-gap-focus="suspected"
+                onClick={() => confirmIncident(incident.id)}
+                className="relative h-7 border-required-border px-2.5 text-[13px] text-required hover:text-required max-sm:before:absolute max-sm:before:inset-x-0 max-sm:before:-inset-y-2"
+              >
+                Tak, to incydent
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  removeIncident(incident.id)
+                  toastRemoved(undoRemove)
+                }}
+                className="relative h-7 px-2.5 text-[13px] text-muted-foreground max-sm:before:absolute max-sm:before:inset-x-0 max-sm:before:-inset-y-2"
+              >
+                Nie, usuń
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {footer && (
         <div className="flex flex-wrap items-center gap-2 pt-0.5">

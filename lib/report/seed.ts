@@ -19,7 +19,6 @@ export function createEmptyShift(now: Date, newId: IdGen): Shift {
     incidents: [],
     sections: {},
     gaps: [],
-    questions: [],
     noIncidentsConfirmed: false,
   }
 }
@@ -92,9 +91,9 @@ export const DEMO_NOTES: DemoNote[] = [
     id: 'demo-n6', hhmm: '01:48',
     text: 'znowu ten typ z wczoraj przy szatni, ogarnięte',
     stages: [() => [{
-      op: 'askQuestion',
-      question: 'Nie jestem pewien, co się stało przy szatni. Czy to był incydent?',
-      options: ['Tak, zapisz jako incydent', 'Nie, tylko informacja'],
+      op: 'addIncident', type: 'Inne', suspected: true,
+      time: { hhmm: '01:48', approx: true }, location: 'Szatnia',
+      description: 'Przy szatni znowu pojawił się ten sam mężczyzna co poprzedniego dnia. Sytuacja opanowana.',
     }]],
   },
   {
@@ -123,7 +122,6 @@ export function createDemoShift(): Shift {
     incidents: [],
     sections: {},
     gaps: [],
-    questions: [],
     noIncidentsConfirmed: false,
   }
   for (const dn of DEMO_NOTES) {
