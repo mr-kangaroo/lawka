@@ -109,7 +109,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 ### 4.2 Dziennik zmiany (journal) and the input
 - **No date/author line** above the entries; those live in the report's properties.
 - **Empty journal** (new shift): a centred empty state: "Zapisuj, co dzieje się na zmianie" (log what happens on the shift) and "Pisz krótko, jak na czacie: godzina, co się stało i gdzie. AI na bieżąco ułoży z tego raport, a gdy czegoś zabraknie, dopyta." (write briefly, as in a chat: the time, what happened and where; the AI builds the report as you go and asks when something is missing).
-- **Each entry** shows its recorded time (HH:MM) in a left column, the text, attachment chips on their own line, and the routing tag under them.
+- **Each entry** shows its recorded time (HH:MM) in a left column, the text, attachment chips on their own line, and the routing tag under them. In the report, attachments of incidents and sections are placeholder thumbnails (striped tile with an image / play / document icon, file name below); no real file handling.
 - **Routing tag** under processed entries: a muted "Incydent #1", "Możliwy incydent #3" or "Publiczność i bezpieczeństwo · Imprezy prywatne" (no arrow; the summary is never listed). This is the only place where AI work is labelled. It shows where a note went, not who wrote what.
 - **Entry states:**
   - `pending`: "porządkuję…" (organising) with a spinner.

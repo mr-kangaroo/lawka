@@ -3,12 +3,12 @@
 import { cn } from 'cn'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { AttachmentChip } from '@/components/journal/attachment-chip'
 import type { DerivedGap } from '@/lib/report/gaps'
 import { emptyDoc, isDocEmpty } from '@/lib/report/rich'
 import { formatHHMM } from '@/lib/report/time'
 import type { Incident } from '@/lib/report/types'
 import { useShift } from '@/store/shift'
+import { AttachmentTiles } from './attachment-tiles'
 import { GapChip } from './gap-chip'
 import { IncidentMenu, toastRemoved } from './incident-menu'
 import { InlineField } from './inline-field'
@@ -102,7 +102,7 @@ export function IncidentBlock({
       : `Godzina zdarzenia: ${time.hhmm}`
   const timeTooltip = time?.approx ? approxTimeTooltip(time.sourcePhrase) : fieldGaps.time?.question
 
-  const footer = incident.attachments.length > 0 || chips.some((g) => !readOnly || g.weight === 'required')
+  const footer = chips.some((g) => !readOnly || g.weight === 'required')
 
   return (
     <section
@@ -229,11 +229,14 @@ export function IncidentBlock({
         </div>
       )}
 
+      {incident.attachments.length > 0 && (
+        <div className="pt-1">
+          <AttachmentTiles attachments={incident.attachments} />
+        </div>
+      )}
+
       {footer && (
         <div className="flex flex-wrap items-center gap-2 pt-0.5">
-          {incident.attachments.map((a) => (
-            <AttachmentChip key={a.id} attachment={a} />
-          ))}
           {chips.map((g) => (
             <GapChip key={g.id} gap={g} readOnly={readOnly} />
           ))}

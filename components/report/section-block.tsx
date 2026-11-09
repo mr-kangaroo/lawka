@@ -9,6 +9,7 @@ import { sectionQuestionGaps } from '@/lib/report/gaps'
 import { emptyDoc, isDocEmpty } from '@/lib/report/rich'
 import type { SectionKey } from '@/lib/report/types'
 import { useShift } from '@/store/shift'
+import { AttachmentTiles } from './attachment-tiles'
 import { GapChip } from './gap-chip'
 import { RichEditor } from './rich-editor'
 
@@ -38,6 +39,7 @@ export type SectionBlockProps = {
  */
 export function SectionBlock({ sectionKey, readOnly, autoFocus, className }: SectionBlockProps) {
   const doc = useShift((s) => s.shift.sections[sectionKey]?.doc) ?? EMPTY
+  const attachments = useShift((s) => s.shift.sections[sectionKey]?.attachments)
   const setSectionDoc = useShift((s) => s.setSectionDoc)
   const confirmNoRemarks = useShift((s) => s.confirmNoRemarks)
   const gaps = useShift((s) => s.shift.gaps)
@@ -100,6 +102,11 @@ export function SectionBlock({ sectionKey, readOnly, autoFocus, className }: Sec
         )}
       </div>
       {body}
+      {attachments && attachments.length > 0 && (
+        <div className="mt-2.5">
+          <AttachmentTiles attachments={attachments} />
+        </div>
+      )}
       {chips.length > 0 && (
         <div className="mt-2.5 flex flex-wrap items-center gap-2">
           {chips.map((g) => (
