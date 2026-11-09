@@ -35,13 +35,16 @@ type DemoNote = {
 }
 
 const lastIncidentId = (s: Shift) => s.incidents[s.incidents.length - 1].id
+/** The incident a demo note created, found by its source note (ids are generated). */
+const incidentFrom = (s: Shift, noteId: string) => s.incidents.find((i) => i.sourceNoteIds.includes(noteId))!.id
 
+/** Every fact in the stored operations comes from its own note (spec: never invent facts). */
 export const DEMO_NOTES: DemoNote[] = [
   {
     id: 'demo-n1', hhmm: '21:15',
     text: 'kolejka ok. 40 min do 22:30, urodziny w loży VIP, 12 osób',
     stages: [() => [
-      { op: 'appendToSection', key: 'audience', paragraphs: ['Duży ruch, kolejka do ok. 40 min do 22:30.'] },
+      { op: 'appendToSection', key: 'audience', paragraphs: ['Kolejka do ok. 40 min do 22:30.'] },
       { op: 'appendToSection', key: 'privateEvents', paragraphs: ['Urodziny w loży VIP, 12 osób.'] },
     ]],
   },
@@ -52,7 +55,7 @@ export const DEMO_NOTES: DemoNote[] = [
     stages: [
       () => [{
         op: 'addIncident', type: 'Bójka', time: { hhmm: '22:40', approx: false }, location: 'Bar główny',
-        description: 'Dwie osoby wyprowadzone przez ochronę. Jedna osoba z rozciętą wargą — opatrzona przez ochronę na miejscu, odmówiła karetki.',
+        description: 'Dwie osoby wyprowadzone przez ochronę. Jedna osoba z rozciętą wargą.',
       }],
       (s) => [
         { op: 'addGap', target: { kind: 'incident', incidentId: lastIncidentId(s) }, question: 'Czy wezwano policję?', weight: 'required' },
@@ -61,24 +64,32 @@ export const DEMO_NOTES: DemoNote[] = [
     ],
   },
   {
-    id: 'demo-n3', hhmm: '00:30',
-    text: 'kran nr 3 cieknie, trzeba zgłosić serwis',
-    stages: [() => [{ op: 'appendToSection', key: 'maintenance', paragraphs: ['Cieknie kran piwny nr 3.'] }]],
+    id: 'demo-n3', hhmm: '22:52',
+    text: 'warga opatrzona przez ochronę, odmówił karetki',
+    stages: [(s) => [{
+      op: 'appendToIncident', incidentId: incidentFrom(s, 'demo-n2'),
+      text: 'Została opatrzona przez ochronę i odmówiła karetki.',
+    }]],
   },
   {
-    id: 'demo-n4', hhmm: '01:30',
+    id: 'demo-n4', hhmm: '00:30',
+    text: 'kran nr 3 cieknie, trzeba zgłosić serwis',
+    stages: [() => [{ op: 'appendToSection', key: 'maintenance', paragraphs: ['Cieknie kran nr 3, trzeba zgłosić serwis.'] }]],
+  },
+  {
+    id: 'demo-n5', hhmm: '01:30',
     text: 'koło 1 dziewczyna zasłabła w toalecie, karetka zabrała ją 1:25',
     stages: [
       () => [{
         op: 'addIncident', type: 'Zasłabnięcie / pomoc medyczna',
-        time: { hhmm: '01:00', approx: true, sourcePhrase: 'koło 1' }, location: 'Toaleta męska',
-        description: 'Gość zasłabł w toalecie. Karetka zabrała go o 01:25.',
+        time: { hhmm: '01:00', approx: true, sourcePhrase: 'koło 1' }, location: 'Toaleta damska',
+        description: 'Dziewczyna zasłabła w toalecie. Karetka zabrała ją o 01:25.',
       }],
       (s) => [{ op: 'addGap', target: { kind: 'incident', incidentId: lastIncidentId(s) }, question: 'Kto udzielił pierwszej pomocy?', weight: 'required' }],
     ],
   },
   {
-    id: 'demo-n5', hhmm: '01:48',
+    id: 'demo-n6', hhmm: '01:48',
     text: 'znowu ten typ z wczoraj przy szatni, ogarnięte',
     stages: [() => [{
       op: 'askQuestion',
@@ -87,11 +98,11 @@ export const DEMO_NOTES: DemoNote[] = [
     }]],
   },
   {
-    id: 'demo-n6', hhmm: '02:52',
+    id: 'demo-n7', hhmm: '02:52',
     text: 'zamykamy, wyjście sprawne, bez kolejek do szatni',
     stages: [() => [
       { op: 'appendToSection', key: 'audience', paragraphs: ['Wyjście sprawne, bez kolejek do szatni.'] },
-      { op: 'setSummary', paragraphs: ['Pełna sala, kolejka do ok. 22:30. Dwa incydenty: bójka przy barze (22:40) i zasłabnięcie gościa (ok. 01:00). Usterka kranu nr 3. Zamknięcie sprawne.'] },
+      { op: 'setSummary', paragraphs: ['Kolejka do ok. 40 min do 22:30. Dwa incydenty: bójka przy barze (22:40) i zasłabnięcie dziewczyny (ok. 01:00). Usterka kranu nr 3. Zamknięcie sprawne.'] },
     ]],
   },
 ]

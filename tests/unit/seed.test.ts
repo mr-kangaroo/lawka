@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createIdGen } from '@/lib/report/ids'
 import { openGaps, requiredCount } from '@/lib/report/gaps'
 import { routeLabel, sortIncidents } from '@/lib/report/operations'
+import { docToPlainText } from '@/lib/report/rich'
 import { createDemoShift, createEmptyShift } from '@/lib/report/seed'
 
 describe('seed', () => {
@@ -15,12 +16,27 @@ describe('seed', () => {
     expect(labels).toEqual({
       'demo-n1': ['Publiczność i bezpieczeństwo', 'Imprezy prywatne'],
       'demo-n2': ['Incydent #1'],
-      'demo-n3': ['Usterki i sprzęt'],
-      'demo-n4': ['Incydent #2'],
-      'demo-n5': [],
-      'demo-n6': ['Publiczność i bezpieczeństwo', 'Podsumowanie'],
+      'demo-n3': ['Incydent #1'],
+      'demo-n4': ['Usterki i sprzęt'],
+      'demo-n5': ['Incydent #2'],
+      'demo-n6': [],
+      'demo-n7': ['Publiczność i bezpieczeństwo', 'Podsumowanie'],
     })
     expect(s.notes[1].routedTo).toEqual([{ kind: 'incident', incidentId: sortIncidents(s)[0].id }])
+  })
+  it('demo incidents only state facts from their notes', () => {
+    const s = createDemoShift()
+    const [fight, faint] = sortIncidents(s)
+    expect(docToPlainText(fight.description!)).toBe(
+      'Dwie osoby wyprowadzone przez ochronę. Jedna osoba z rozciętą wargą. Została opatrzona przez ochronę i odmówiła karetki.',
+    )
+    expect(fight.sourceNoteIds).toEqual(['demo-n2', 'demo-n3'])
+    expect(s.notes.find((n) => n.id === 'demo-n3')).toMatchObject({ text: 'warga opatrzona przez ochronę, odmówił karetki' })
+    expect(new Date(s.notes.find((n) => n.id === 'demo-n3')!.createdAt).getHours()).toBe(22)
+    expect(docToPlainText(faint.description!)).toBe('Dziewczyna zasłabła w toalecie. Karetka zabrała ją o 01:25.')
+    expect(faint.location?.value).toBe('Toaleta damska')
+    expect(docToPlainText(s.sections.summary!.doc)).toContain('zasłabnięcie dziewczyny (ok. 01:00)')
+    expect(s.notes).toHaveLength(7)
   })
   it('demo shift requiredCount is 3', () => {
     expect(requiredCount(createDemoShift())).toBe(3)
