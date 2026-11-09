@@ -65,12 +65,17 @@ export function Incidents() {
   } else {
     body = (
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-        <p className="text-muted-foreground">Nie zgłoszono żadnych incydentów.</p>
+        <p className="text-muted-foreground">
+          Nie zgłoszono żadnych incydentów.
+          {/* Sent without the required confirmation. */}
+          {readOnly && <span className="text-required"> — brak danych</span>}
+        </p>
         {!readOnly && (
           <Button
             variant="ghost"
             size="sm"
             onClick={confirmNoIncidents}
+            data-gap-focus="no-incidents"
             className="relative h-7 rounded-md border-required-border bg-required-bg px-2.5 text-[13px] font-medium text-required hover:border-required hover:bg-required-bg hover:text-required dark:hover:bg-required-bg max-sm:before:absolute max-sm:before:inset-x-0 max-sm:before:-inset-y-2"
           >
             Potwierdź: brak incydentów

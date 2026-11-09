@@ -25,6 +25,7 @@ export function jumpTargetFor(target: DerivedGap['target']): JumpTarget {
     case 'section':
       return { elementId: `section-${target.key}`, focus: '[contenteditable="true"], button' }
     case 'report':
-      return { elementId: 'incidents', focus: 'button' }
+      // The only report-level gap is "Potwierdź: brak incydentów"; focus that button, not "+ Dodaj incydent".
+      return { elementId: 'incidents', focus: '[data-gap-focus="no-incidents"]' }
   }
 }

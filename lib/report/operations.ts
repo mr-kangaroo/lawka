@@ -145,17 +145,25 @@ export function applyOperations(
   }
   const setField = <T>(current: Field<T> | null, value: T): Field<T> | undefined =>
     current === null || current.prov.by !== 'manager' ? aiField(value) : undefined
+  /** Blank or whitespace-only text counts as absent (D7: it must not satisfy the legal minimum). */
+  const present = (text: string | undefined): string | undefined => {
+    const t = text?.trim()
+    return t ? t : undefined
+  }
 
   for (const op of ops) {
     switch (op.op) {
       case 'addIncident': {
+        const type = present(op.type)
+        const location = present(op.location)
+        const description = present(op.description)
         const inc: Incident = {
           id: newId(),
           createdAt: note?.createdAt ?? now,
-          type: aiField(op.type),
+          type: type ? aiField(type) : null,
           time: op.time ? aiField<EventTime>({ ...op.time }) : null,
-          location: op.location !== undefined ? aiField(op.location) : null,
-          description: { type: 'doc', content: paragraphsToBlocks([op.description], attrs()) },
+          location: location ? aiField(location) : null,
+          description: description ? { type: 'doc', content: paragraphsToBlocks([description], attrs()) } : null,
           attachments: [],
           sourceNoteIds: [noteId],
         }
@@ -171,16 +179,18 @@ export function applyOperations(
         if (!inc) break
         giveAttachmentsToIncident(inc)
         let changed = false
-        if (op.type !== undefined) {
-          const f = setField(inc.type, op.type)
+        const type = present(op.type)
+        const location = present(op.location)
+        if (type) {
+          const f = setField(inc.type, type)
           if (f) { inc.type = f; changed = true }
         }
         if (op.time !== undefined) {
           const f = setField(inc.time, { ...op.time } as EventTime)
           if (f) { inc.time = f; changed = true }
         }
-        if (op.location !== undefined) {
-          const f = setField(inc.location, op.location)
+        if (location) {
+          const f = setField(inc.location, location)
           if (f) { inc.location = f; changed = true }
         }
         if (changed) {

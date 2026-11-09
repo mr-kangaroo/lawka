@@ -10,7 +10,7 @@ import { useShift } from '@/store/shift'
 import { DemoMenu } from './demo-menu'
 
 export type AppHeaderProps = {
-  /** "Wyślij raport" on the Raport tab. Task 11 passes the review-dialog opener. */
+  /** "Wyślij raport" on the Raport tab: opens the review dialog. */
   onSend?: () => void
 }
 
@@ -30,7 +30,8 @@ const TRIGGER =
   'h-8 flex-1 rounded-[7px] px-3.5 sm:flex-none max-sm:before:absolute max-sm:before:inset-x-0 max-sm:before:-inset-y-1.5'
 
 function ShiftTabs() {
-  const required = useShift((s) => requiredCount(s.shift))
+  // Once sent, open gaps are "brak danych" in the report; nothing is left to fill in.
+  const required = useShift((s) => (s.shift.sentAt ? 0 : requiredCount(s.shift)))
   return (
     <TabsList aria-label="Widok zmiany" className="h-10 w-full rounded-[10px] border border-border bg-card/60 sm:w-fit">
       <TabsTrigger value="journal" className={TRIGGER}>
@@ -63,9 +64,14 @@ export function AppHeader({ onSend }: AppHeaderProps) {
   const tab = useShift((s) => s.tab)
   const setTab = useShift((s) => s.setTab)
   const sent = useShift((s) => Boolean(s.shift.sentAt))
+  const newShift = useShift((s) => s.newShift)
 
   const primary =
-    tab === 'journal' ? (
+    tab === 'journal' && sent ? (
+      <Button onClick={newShift} className={PRIMARY}>
+        Nowa zmiana
+      </Button>
+    ) : tab === 'journal' ? (
       <Button onClick={() => setTab('report')} className={PRIMARY}>
         Zamknij zmianę
       </Button>

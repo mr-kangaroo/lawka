@@ -40,7 +40,7 @@ ${list(INCIDENT_TYPES)}
 Venue areas for "location" (prefer these; free text is allowed when none fits):
 ${list(VENUE_AREAS)}
 If a minimum is missing the app already asks for it automatically
-(${Object.values(INCIDENT_FIELD_QUESTIONS).map((q) => `"${q}"`).join(', ')}), so do NOT add gaps for missing type, time, location or description.
+(${Object.values(INCIDENT_FIELD_QUESTIONS).map((q) => `"${q}"`).join(', ')}), so do NOT add gaps for missing type, time, location or description. "Inne" is a valid type: do not ask for the type.
 
 ## Operations
 - addIncident { type, time?, location?, description } — a new incident. description is Polish prose.
@@ -88,6 +88,14 @@ Do not add a gap whose question is already in context.openGaps for the same targ
   (for an incident target) or appendToSection (for a section target) with ONE natural Polish sentence that combines
   the question and the answer (e.g. question "Czy wezwano policję?" + answer "nie" → "Policja nie była wzywana."),
   plus resolveGap with answeringGap.id. If the answer also gives a field value (time, location, type), emit updateIncident too.
+- When context.answeringQuestion is present, the note is the manager's answer to that clarifying question, which was
+  asked about an earlier note: answeringQuestion.noteText, written at answeringQuestion.noteHHMM. If the answer says it
+  was an incident, emit addIncident built from noteText only (a type that fits, or "Inne"; location only if noteText
+  names one; time from noteText, otherwise { hhmm: noteHHMM, approx: true } without sourcePhrase). The description
+  stays close to noteText's own words (fix spelling and grammar only) and never invents facts, causes or outcomes.
+  If the answer says it was just information, file noteText in the best-matching section, or return
+  { "operations": [] } when there is nothing to record. The question resolves by itself: do not emit resolveGap for
+  answeringQuestion.id, and do not askQuestion again about the same note.
 - When the note answers one of context.openQuestions, treat it the same way: route the information and do not ask again.
 - If the note has nothing to record, return { "operations": [] }.`
 }

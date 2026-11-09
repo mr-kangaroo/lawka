@@ -1,12 +1,14 @@
 'use client'
 
 import { cn } from 'cn'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { EMPTY_SECTION_PROMPTS, FIXED_SECTIONS, SECTION_LABELS } from '@/lib/report/catalog'
+import { sectionQuestionGaps } from '@/lib/report/gaps'
 import { emptyDoc, isDocEmpty } from '@/lib/report/rich'
 import type { SectionKey } from '@/lib/report/types'
 import { useShift } from '@/store/shift'
+import { GapChip } from './gap-chip'
 import { RichEditor } from './rich-editor'
 
 /** Stable empty doc for fixed sections that don't exist in the store yet. */
@@ -30,12 +32,18 @@ export type SectionBlockProps = {
 /**
  * One report section: an `h3` label and its rich-text body.
  * An empty section with a prompt shows the muted prompt (click it to start typing) and, for
- * fixed sections, a dashed "Bez uwag" button. The root has `id="section-<key>"` for jumps.
+ * fixed sections, a dashed "Bez uwag" button. AI question gaps on the section are chips below
+ * the body, as on incidents. The root has `id="section-<key>"` for jumps.
  */
 export function SectionBlock({ sectionKey, readOnly, autoFocus, className }: SectionBlockProps) {
   const doc = useShift((s) => s.shift.sections[sectionKey]?.doc) ?? EMPTY
   const setSectionDoc = useShift((s) => s.setSectionDoc)
   const confirmNoRemarks = useShift((s) => s.confirmNoRemarks)
+  const gaps = useShift((s) => s.shift.gaps)
+  const chips = useMemo(
+    () => sectionQuestionGaps(gaps, sectionKey).filter((g) => !readOnly || g.weight === 'required'),
+    [gaps, sectionKey, readOnly],
+  )
   const [editing, setEditing] = useState(false)
 
   const label = SECTION_LABELS[sectionKey]
@@ -88,6 +96,13 @@ export function SectionBlock({ sectionKey, readOnly, autoFocus, className }: Sec
         {label}
       </h3>
       {body}
+      {chips.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+          {chips.map((g) => (
+            <GapChip key={g.id} gap={g} readOnly={readOnly} />
+          ))}
+        </div>
+      )}
     </section>
   )
 }

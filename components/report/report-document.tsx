@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useRef, useState } from 'react'
 import { CONDITIONAL_SECTIONS } from '@/lib/report/catalog'
+import { sectionQuestionGaps } from '@/lib/report/gaps'
 import type { SectionKey } from '@/lib/report/types'
 import { SentBanner } from '@/components/shift/sent-banner'
 import { useShift } from '@/store/shift'
@@ -20,11 +21,13 @@ const FIXED_AFTER_INCIDENTS: SectionKey[] = ['audience', 'security', 'maintenanc
 export function ReportDocument() {
   const readOnly = useShift((s) => !!s.shift.sentAt)
   const sections = useShift((s) => s.shift.sections)
+  const gaps = useShift((s) => s.shift.gaps)
   const addSection = useShift((s) => s.addSection)
   // The section just added from a hint; its editor takes focus when it mounts.
   const [added, setAdded] = useState<SectionKey | null>(null)
 
-  const conditional = CONDITIONAL_SECTIONS.filter((k) => sections[k])
+  // A conditional section shows when it has content, or an open AI question for it to answer.
+  const conditional = CONDITIONAL_SECTIONS.filter((k) => sections[k] || sectionQuestionGaps(gaps, k).length > 0)
 
   // The tabs share one scroll container; the Dziennik leaves it at the newest note.
   const ref = useRef<HTMLElement>(null)

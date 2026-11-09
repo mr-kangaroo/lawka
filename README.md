@@ -14,7 +14,7 @@ npm test                     # unit tests (Vitest)
 npm run test:e2e             # end-to-end (Playwright, AI route mocked; Desktop Chrome + Pixel 7)
 ```
 
-Without a key the app still works: notes go through the scripted fallback.
+Without a key the app still runs, but only partly: a keyword-based fallback handles notes with common incident words (bójka, kradzież, zasłabł, karetka, …) and answers to questions; other notes are marked as failed and can be retried with "Ponów".
 
 ## Key decisions
 
@@ -30,7 +30,7 @@ Without a key the app still works: notes go through the scripted fallback.
 
 ## How the AI works
 
-Each note is sent to `/api/process-note` and the model returns a list of **operations** (add incident, append to section, add or resolve a gap, ask a question), not a whole report. `applyOperations` applies them to the shift, skipping anything the manager edited by hand, so nothing can be silently dropped. If the model fails or times out, a scripted fallback takes over. Model: `gemini-3.1-flash-lite`, about 2 s per note.
+Each note is sent to `/api/process-note` and the model returns a list of **operations** (add incident, append to section, add or resolve a gap, ask a question), not a whole report. `applyOperations` applies them to the shift, skipping anything the manager edited by hand, so nothing can be silently dropped. If the model fails or times out, the keyword-based fallback handles what it can; any other note is marked as failed and can be retried. Model: `gemini-3.1-flash-lite`, about 2 s per note.
 
 ## Co dalej
 

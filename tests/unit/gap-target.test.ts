@@ -13,7 +13,7 @@ describe('jumpTargetFor', () => {
   it('maps a section gap to its section', () => {
     expect(jumpTargetFor({ kind: 'section', key: 'security' }).elementId).toBe('section-security')
   })
-  it('maps the report-level gap to the Incydenty area', () => {
-    expect(jumpTargetFor({ kind: 'report' }).elementId).toBe('incidents')
+  it('maps the report-level gap to the "Potwierdź: brak incydentów" button', () => {
+    expect(jumpTargetFor({ kind: 'report' })).toEqual({ elementId: 'incidents', focus: '[data-gap-focus="no-incidents"]' })
   })
 })

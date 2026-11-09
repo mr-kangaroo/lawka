@@ -19,7 +19,8 @@ const TONE = {
 /**
  * A question gap (spec §4.6). Required: amber fill. Optional: dashed and muted, with × to
  * dismiss. Clicking opens a one-line answer, pre-filled with the AI's suggestion; saving files
- * it as a note answering the gap. Read-only: required chips stay as static labels.
+ * it as a note answering the gap. Read-only: required chips stay as static labels, marked
+ * "— brak danych"; optional ones are hidden.
  */
 export function GapChip({ gap, readOnly }: { gap: DerivedGap; readOnly: boolean }) {
   const dismissGap = useShift((s) => s.dismissGap)
@@ -27,7 +28,9 @@ export function GapChip({ gap, readOnly }: { gap: DerivedGap; readOnly: boolean 
   const tone = TONE[gap.weight]
 
   if (readOnly) {
-    return gap.weight === 'required' ? <span className={cn(CHIP, tone, 'px-2')}>{gap.question}</span> : null
+    return gap.weight === 'required' ? (
+      <span className={cn(CHIP, tone, 'px-2')}>{gap.question} — brak danych</span>
+    ) : null
   }
 
   return (

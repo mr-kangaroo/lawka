@@ -5,33 +5,53 @@ import { generateOperations } from '@/lib/ai/gemini'
 import type { Operation } from '@/lib/report/operations'
 import type { Note } from '@/lib/report/types'
 
+/** The AI call is bounded at 20 s; leave headroom for the fallback. */
+export const maxDuration = 30
+
+/** Caps keep a public endpoint from forwarding huge prompts to the model. */
+const NOTE_MAX = 4000
+const TEXT_MAX = 8000
+const ARRAY_MAX = 100
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
+const short = z.string().max(NOTE_MAX)
+const list = <T extends z.ZodType>(item: T) => z.array(item).max(ARRAY_MAX)
+
 const GapRefSchema = z.looseObject({
-  id: z.string(),
-  question: z.string(),
+  id: short,
+  question: short,
   target: z.looseObject({ kind: z.enum(['incident', 'section', 'report']) }),
 })
 
 const BodySchema = z.object({
   note: z.looseObject({
-    id: z.string(),
+    id: short,
     createdAt: z.iso.datetime(),
-    text: z.string(),
-    attachments: z.array(z.unknown()),
+    text: z.string().max(NOTE_MAX),
+    attachments: list(z.unknown()),
     status: z.enum(['pending', 'processed', 'failed']),
-    routedTo: z.array(z.looseObject({ kind: z.enum(['incident', 'section']) })),
-    replyTo: z.string().optional(),
-    answersGapId: z.string().optional(),
+    routedTo: list(z.looseObject({ kind: z.enum(['incident', 'section']) })),
+    replyTo: short.optional(),
+    answersGapId: short.optional(),
   }),
   context: z.looseObject({
-    shiftDate: z.string(),
-    startHHMM: z.string(),
-    nowHHMM: z.string(),
-    noteHHMM: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-    incidents: z.array(z.looseObject({ id: z.string(), number: z.number() })),
-    sections: z.array(z.looseObject({ key: z.string(), text: z.string() })),
-    openGaps: z.array(GapRefSchema),
-    openQuestions: z.array(z.looseObject({ id: z.string(), question: z.string() })),
+    shiftDate: short,
+    startHHMM: short,
+    nowHHMM: short,
+    noteHHMM: z.string().regex(HHMM),
+    incidents: list(z.looseObject({ id: short, number: z.number(), description: z.string().max(TEXT_MAX) })),
+    sections: list(z.looseObject({ key: short, text: z.string().max(TEXT_MAX) })),
+    openGaps: list(GapRefSchema),
+    openQuestions: list(z.looseObject({ id: short, question: short })),
     answeringGap: GapRefSchema.optional(),
+    answeringQuestion: z
+      .looseObject({
+        id: short,
+        question: short,
+        options: list(short),
+        noteText: z.string().max(NOTE_MAX),
+        noteHHMM: z.string().regex(HHMM),
+      })
+      .optional(),
   }),
 })
 

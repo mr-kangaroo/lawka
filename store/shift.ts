@@ -181,7 +181,11 @@ export const useShift = create<ShiftState>()(
             const inc = s.incidents.find((i) => i.id === incidentId)
             if (!inc) return
             if (field === 'time') inc.time = ownedField(value as EventTime)
-            else inc[field] = ownedField(value as string)
+            else {
+              // Blank text never counts as a value (D7); ignore it rather than store it.
+              const text = (value as string).trim()
+              if (text) inc[field] = ownedField(text)
+            }
           })
         },
 
