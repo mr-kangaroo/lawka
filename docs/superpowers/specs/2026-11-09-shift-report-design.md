@@ -61,7 +61,7 @@ The brief covers **creating one report only**. Reading, collecting, listing or e
 - **Notes feed:** text input, fake attachments (chips and placeholder thumbnails), timestamps, AI routing tags, AI questions, and pending/failed states.
 - **Report:**
   - Fixed title, shift-date picker and author picker.
-  - Incidents as structured blocks: searchable type, time picker, place picker, description, attachments, gap chips, Q&A lines, a hover menu with duplicate/remove, and "+ Dodaj incydent".
+  - Incidents as structured blocks: searchable type, time picker, place picker, a rich-text description, attachments, gap chips, a hover menu with duplicate/remove, and "+ Dodaj incydent".
   - Sections with rich text.
   - A box suggesting sections not yet mentioned.
 - AI processing of notes into operations, plus follow-up questions.
@@ -157,8 +157,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
     - **Usuń (remove):** shown in red. Removes the incident and shows a toast, "Usunięto incydent · Cofnij" (incident removed · undo), for about 8 s. Source notes are never removed.
     - "dodano o HH:MM" stays visible as a muted footer of the menu.
 - **Body:**
-  - The description (plain multi-line text, edited in place).
-  - Q&A lines from answered gaps ("Pomoc rannemu? — Opatrzony przez ochronę…", "help for the injured? — treated by security…").
+  - **The description is ordinary document text**: the same Tiptap editor, typography and shortcuts as the sections. It reads as one or more plain paragraphs, and everything in it is editable. There are no fixed sub-elements. Answers to questions are **woven into the description as normal sentences** (for example "…Jedna osoba z rozciętą wargą — opatrzona przez ochronę na miejscu, odmówiła karetki.", "one person with a split lip, treated by security on site, refused an ambulance"), not shown as separate "question — answer" rows.
   - Attachment chips.
   - Gap chips.
 - **"+ Dodaj incydent"** (add incident) is a quiet text button **to the right of the "Incydenty" heading**. Most incidents arrive through notes and the AI, so manual adding is secondary. It adds an empty incident whose four required fields immediately show as field gaps.
@@ -176,7 +175,10 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
   - `required`: amber fill, bolder text.
   - `optional`: dashed grey outline, muted text.
   - There is no legend. The two chip styles plus the header count ("3 wymagane · 2 warto dodać") explain themselves.
-- **Clicking a question chip opens a small popover** with a one-line answer field, pre-filled with the AI's suggestion when there is one. Saving stores the answer as a Q&A line under the incident or section.
+- **Clicking a question chip opens a small popover** with a one-line answer field, pre-filled with the AI's suggestion when there is one. Saving does two things:
+  - The answer becomes a **note in the feed**, linked to the gap, so the record stays complete.
+  - The note is processed like any other: the AI rewrites it into a natural sentence and appends it to the incident description (or section) with `appendToIncident` / `appendToSection`.
+  - The chip disappears straight away. If the AI fails, the fallback appends "<question> <answer>." as plain text, which the manager can polish.
 - Optional chips can be dismissed (×). Required chips can only be answered, or left open and marked in the closed report.
 - **Header:** "⚠ N wymagane" in amber, then "· M warto dodać" in muted grey.
 
@@ -223,16 +225,13 @@ type Note = {
 
 type EventTime = { hhmm: string; approx: boolean; sourcePhrase?: string }  // sourcePhrase: the manager's words, e.g. "koło 1", quoted in the tooltip   // calendar date derived from shift date (after midnight → next day)
 
-type QA = { gapId: string; question: string; answer: Field<string> }
-
 type Incident = {
   id: string                               // stable; the AI references incidents by id
   createdAt: ISO                           // "dodano o"
   type: Field<string> | null               // predefined label or free text
   time: Field<EventTime> | null
   location: Field<string> | null           // predefined area or free text
-  description: Field<string> | null
-  qa: QA[]
+  description: RichDoc | null             // same rich-text format and per-block authorship as sections
   attachments: Attachment[]
   sourceNoteIds: string[]
 }
@@ -306,8 +305,9 @@ type Shift = {
 ```ts
 type Operation =
   | { op: 'addIncident'; type: string; time?: EventTime; location?: string; description: string }
-  | { op: 'updateIncident'; incidentId: string; type?: string; time?: EventTime; location?: string; description?: string }
-  | { op: 'appendToSection'; key: SectionKey; paragraphs: string[] }   // plain text; bullets via "- " prefix
+  | { op: 'updateIncident'; incidentId: string; type?: string; time?: EventTime; location?: string }
+  | { op: 'appendToSection'; key: SectionKey; paragraphs: string[] }
+  | { op: 'appendToIncident'; incidentId: string; text: string }          // adds a sentence to the description's last ai block, or a new block if the last one is manager-owned   // plain text; bullets via "- " prefix
   | { op: 'setSummary'; paragraphs: string[] }
   | { op: 'addGap'; target: GapTarget; question: string; weight: 'required' | 'optional'; suggestion?: { value: string; reason: string } }
   | { op: 'resolveGap'; gapId: string }
