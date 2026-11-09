@@ -55,7 +55,25 @@ const nowISO = () => new Date().toISOString()
 
 function validShape(v: unknown): v is { shift: Shift; tab?: Tab } {
   const shift = (v as { shift?: Partial<Shift> } | null)?.shift
-  return !!shift && Array.isArray(shift.notes) && Array.isArray(shift.incidents)
+  return (
+    !!shift &&
+    Array.isArray(shift.notes) &&
+    Array.isArray(shift.incidents) &&
+    typeof shift.sections === 'object' &&
+    shift.sections !== null &&
+    !Array.isArray(shift.sections) &&
+    Array.isArray(shift.gaps) &&
+    Array.isArray(shift.questions)
+  )
+}
+
+/** A note still `pending` after a reload lost its request; mark it `failed` so it can be retried. */
+function failInterruptedNotes(shift: Shift): Shift {
+  if (!shift.notes.some((n) => n.status === 'pending')) return shift
+  return {
+    ...shift,
+    notes: shift.notes.map((n) => (n.status === 'pending' ? { ...n, status: 'failed' as const } : n)),
+  }
 }
 
 const baseStorage = createJSONStorage<{ shift: Shift; tab: Tab }>(() => localStorage)
@@ -66,6 +84,13 @@ const safeStorage: typeof baseStorage = baseStorage && {
       return baseStorage.getItem(name)
     } catch {
       return null
+    }
+  },
+  setItem: (name, value) => {
+    try {
+      return baseStorage.setItem(name, value)
+    } catch {
+      // Quota exceeded or storage blocked: keep the in-memory state.
     }
   },
 }
@@ -269,7 +294,11 @@ export const useShift = create<ShiftState>()(
       migrate: () => ({ shift: createDemoShift(), tab: 'journal' as Tab }),
       merge: (persisted, current) =>
         validShape(persisted)
-          ? { ...current, shift: persisted.shift, tab: persisted.tab === 'report' ? 'report' : 'journal' }
+          ? {
+              ...current,
+              shift: failInterruptedNotes(persisted.shift),
+              tab: persisted.tab === 'report' ? 'report' : 'journal',
+            }
           : { ...current, shift: createDemoShift() },
     },
   ),

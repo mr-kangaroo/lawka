@@ -81,6 +81,7 @@ export async function requestOperations(
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ note, context }),
+    signal: AbortSignal.timeout(25000),
   })
   if (!res.ok) throw new Error(`process-note failed: ${res.status}`)
   const json = await res.json()
