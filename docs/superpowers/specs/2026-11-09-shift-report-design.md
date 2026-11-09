@@ -1,9 +1,9 @@
 # Ławka — Shift Report (Raport ze zmiany) — Design Spec
 
 - **Date:** 2026-11-09
-- **Status:** Draft v2, awaiting review
+- **Status:** v3 (modes layout), approved for planning
 - **Brief:** Notion "🪡 Zadanie na ławce" (wearetonik)
-- **Visual reference:** [design canvas](https://claude.ai/artifact/3jojprCgVBaPsRuMua5Ykm), frame **"1 · Notes feed + report as a document (chosen)"** plus the phone frame. Options 2 and 3 on the canvas were rejected and are kept only for comparison.
+- **Visual reference:** [design canvas](https://claude.ai/artifact/3jojprCgVBaPsRuMua5Ykm), the **"v2 —" row**: frames "v2 · Dziennik zmiany (desktop)", "v2 · Raport (desktop)" and "v2 · Dziennik (telefon)". The report-document details (incidents, sections, popovers) are in frame "1 · Notes feed + report as a document" and "1 · Open states (popovers)". Options 2 and 3 were rejected and are kept only for comparison.
 - **Timebox:** 8 hours total, including this spec
 
 ---
@@ -35,10 +35,10 @@ The brief covers **creating one report only**. Reading, collecting, listing or e
 | # | Decision | Why |
 |---|----------|-----|
 | D1 | **One live report per shift**, open all night: quick notes during the shift plus the close at 3 a.m. on one screen. | Answers "incidents recorded close to the moment" without adding a second flow. |
-| D2 | **Layout: a notes feed (left) next to the report (right).** On a phone the two become tabs. | Resolves the brief's tension between guided and free text without a mode choice. Latency doesn't block the manager. |
+| D2 | **Two modes in one column: tabs "Dziennik zmiany" (shift journal) and "Raport" (report), with one input pinned at the bottom.** The journal is for recording what happens during the shift; the report is the finished document for closing. The same layout serves phone and laptop. | Two jobs, two contexts. The report is always ready when you switch, which shows the AI's work best. One layout means less code. |
 | D3 | **Structured underneath, a document on the surface.** The report looks and edits like one document, but the data stays structured. There are fixed fields (date, author), **fixed section headings** that can't be renamed, deleted or invented, **incidents as structured records**, and rich text only *inside* sections. Stored as JSON keyed by section, never as one markdown blob. | Evidence for compliance needs consistency, validation and queryable data. The manager needs it to not feel like a form. |
 | D4 | **Each section has its own small rich-text editor** (Tiptap: bold, italic, bullet list), styled so the sections read as one continuous document. There is **no formatting toolbar**: formatting is by keyboard shortcuts and markdown-style typing (see §4.5). | Simpler and safer than one editor for the whole report: the structure can't break, the AI writes into a known place, and authorship is tracked per paragraph. |
-| D5 | **The AI asks questions inside the feed**, under the unclear note, with quick replies and a short text field. It only asks when it can't classify a note. | A conversation without turning the app into a chat. |
+| D5 | **AI questions appear in a card above the input** (visible in both tabs), with quick replies. The journal entry they belong to shows "czeka na Twoją odpowiedź ↓" (waiting for your answer). The AI only asks when it can't classify a note. | A conversation without turning the app into a chat. |
 | D6 | **Gaps have weight: `required`** (amber, counted in the header) **or `optional`** (grey dashed, not counted). | Not every gap matters equally. "Which toilet?" shouldn't nag. |
 | D7 | **The legal minimum for incidents (type, time, place, description) is enforced by code.** The AI adds context-specific questions with a weight. | Legal requirements must be reliable and testable. |
 | D8 | **Everything is editable in place. Manual edits always win.** The AI never changes text or a field the manager has touched. | Fixing text directly is faster than asking the AI. Trust. |
@@ -49,33 +49,35 @@ The brief covers **creating one report only**. Reading, collecting, listing or e
 | D13 | **UI in Polish.** Code, comments, commits and docs in English. | The users and the brief are Polish. Shows the AI handling Polish input. |
 | D14 | **No backend.** State lives in localStorage. | 8-hour timebox. Refresh-safe at 3 a.m. |
 | D15 | **Neutral shadcn theme, dark-first.** No branding. | Brief constraint. Design effort goes into the flow. |
-| D16 | **No voice dictation.** | Dropped to pay for the editor work. Listed under "what's next". |
+| D16 | **Voice dictation as a stretch goal:** a 🎤 button in the input using the browser's speech recognition (`pl-PL`). The dictated text goes into the input to check before adding. Hidden in unsupported browsers. | Cheap and valuable at 3 a.m. Built last and first to cut. |
 | D17 | **Five fixed sections, always shown:** Podsumowanie, Incydenty, Publiczność i bezpieczeństwo, Ochrona, Usterki i sprzęt. **The other eight appear only when relevant.** An empty fixed section is confirmed explicitly ("Bez uwag", nothing to report). **"Brak incydentów" (no incidents) is a required confirmation.** | In evidence, "nothing happened" is a fact. An explicitly confirmed empty section is worth more than a missing one. |
+| D18 | **The report is built continuously in the background**, one note at a time. Switching to the Raport tab never triggers generation. | One big call at 3 a.m. would be slow (10–30 s) and the riskiest moment of the night. |
+| D19 | **The single input always adds to the journal**, in both tabs. Corrections typed in the Raport tab ("incydent 2 był o 01:05") are journal notes the AI turns into update operations. Direct editing of the report stays the main way to fix text. | No separate chat or command system. One mental model. |
 
 ---
 
 ## 3. Scope
 
 ### In scope
-- One screen with three states: shift running, closing with a review, and closed (read-only).
-- **Header:** a "← Wróć" (back) button (placeholder with no action, standing for the app's home), "Start 20:00", a "Zmiana trwa" (shift in progress) pill, gap counts and "Zamknij zmianę" (close shift).
-- **Notes feed:** text input, fake attachments (chips and placeholder thumbnails), timestamps, AI routing tags, AI questions, and pending/failed states.
-- **Report:**
-  - Fixed title, shift-date picker and author picker.
-  - Incidents as structured blocks: searchable type, time picker, place picker, a rich-text description, attachments, gap chips, a hover menu with duplicate/remove, and "+ Dodaj incydent".
-  - Sections with rich text.
-  - Five fixed sections with "Bez uwag" confirmations, conditional sections, and section hints.
+- One screen, two tabs, three states (shift running, review before sending, sent/read-only).
+- **Header:** "← Wróć" (back; a placeholder with no action), "● Zmiana trwa · od 20:00" (shift in progress since 20:00), the tabs **[Dziennik zmiany | Raport ③]** (the badge is the required-gap count), and a primary button on the right: "Zamknij zmianę" (close shift) in Dziennik, "Wyślij raport" (send report) in Raport.
+- **Dziennik zmiany:** a centred timeline of notes with timestamps, attachment chips, routing tags, and pending/failed/waiting states.
+- **One input** at the bottom of both tabs: text, fake attachments (chips and placeholder thumbnails), 🎤 (stretch), "Dodaj ↵". Above it, the AI question card when there is one.
+- **Raport:** a centred document:
+  - fixed title, Notion-style properties (date, author)
+  - incidents as structured blocks: inline underlined type/time/place opening popovers, a rich-text description, attachments, gap chips, a hover menu with duplicate/remove, "+ Dodaj incydent"
+  - five fixed sections with "Bez uwag", conditional sections, section hints
 - AI processing of notes into operations, plus follow-up questions.
-- Gap indicators, the header count and answering gaps in place.
-- Close flow: review dialog → "close anyway" → locked report with the closing time.
+- Gap indicators, the tab badge, answering gaps in place.
+- Send flow: review dialog → "send anyway" → read-only report with the sending time.
 - A seeded demo shift and a reset.
-- Responsive: laptop with two columns, phone with tabs.
+- Responsive: the same layout from phone to laptop.
 
 ### Out of scope
 - Other flows (from the brief): the owner/reader view, a list or history of reports, multiple venues, login, the app's home page (the back button is a placeholder).
 - Real file handling (from the brief).
-- Export, PDF, sending, notifications.
-- Voice dictation, and rating fields for sections like "ocena bramkarzy" or "ocena baru" (door staff and bar ratings). Both go in the README under "Co dalej" (what's next).
+- Real sending, export, PDF, notifications. "Wyślij raport" only locks the report.
+- Rating fields for sections like "ocena bramkarzy" or "ocena baru" (door staff and bar ratings). These go in the README under "Co dalej" (what's next).
 
 ---
 
@@ -83,37 +85,42 @@ The brief covers **creating one report only**. Reading, collecting, listing or e
 
 Copy below is Polish UI text. The English in parentheses is only for the reader of this spec.
 
-### 4.1 Layout (laptop)
+### 4.1 Layout
 
 ```
-┌ [← Wróć] │ Start 20:00 · (● Zmiana trwa)              ⚠ 3 wymagane · 2 warto dodać   [Zamknij zmianę] ┐
-├────────────── Notatki ──────────────┬──────────────────────── Raport ──────────────────────────────────┤
-│ 21:15 note text                     │       ✦ Publiczność · Imprezy pryw. │                                                                    │
-│ 22:41 note text  [IMG_2231.jpg]     │ Raport ze zmiany                                                   │
-│       ✦ Incydent #1                 │ 📅 Data zmiany   pt, 8 lis 2026 → sob, 9 lis  ·  👤 Autor  (KN) Kasia Nowak │
-│ 01:48 unclear note                  │                                                                    │
-│   ┌ ✦ AI question                ┐  │ Podsumowanie                                                        │
-│   │ [Tak, zapisz jako incydent]  │  │ Pełna sala, kolejka do 22:30…                                       │
-│   │ [Nie, tylko informacja]      │  │ Incydenty                                         + Dodaj incydent  │
-│   │ [ …albo dopisz, co się stało ]│ │ ┌ #1 Bójka · 22:40 · Bar główny  (dotted underlines)   dodano o 22:41 ┐ │
-│   └──────────────────────────────┘  │ │ description · Q—A lines · [IMG] · gap chips                      │ │
-│ 02:52 note  ⟳ porządkuję…           │ └──────────────────────────────────────────────────────────────────┘ │
-│ ┌ Nowa notatka…     📎 [Dodaj ↵] ┐  │ └───────────────────────────────┘   │ Publiczność i bezp. / Ochrona [Bez uwag] / Usterki / Imprezy pryw.   │
-│                                     │ Często w raportach: (+ Bar) (+ Ocena bramkarzy) (+ Produkcja…) +2  │
-└─────────────────────────────────────┴────────────────────────────────────────────────────────────────────┘
+┌ ← Wróć  ● Zmiana trwa · od 20:00     [ Dziennik zmiany | Raport ③ ]          [Zamknij zmianę] ┐
+│                                                                                                │
+│                      centred column (journal ~720px / report ~760px)                           │
+│   Dziennik: 21:15 note … → Publiczność i bezpieczeństwo · Imprezy prywatne                     │
+│             22:41 note … [IMG_2231.jpg] → Incydent #1                                          │
+│             01:48 note … czeka na Twoją odpowiedź ↓                                            │
+│             02:52 note … ⟳ porządkuję…                                                         │
+│   Raport:   title · properties · Podsumowanie · Incydenty · fixed sections · hints             │
+│                                                                                                │
+│   ┌ Pytanie do notatki z 01:48 · Czy to był incydent?  (Tak, incydent) (Nie, tylko info) ┐     │
+│   ┌ Co się dzieje? …                                              🎤  📎  [Dodaj ↵]     ┐     │
+└────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Phone:** **Notatki | Raport** become tabs, and the Raport tab label shows the required-gap count ("Raport · 1 luka", meaning one gap). The composer is pinned to the bottom with ≥44 px attach and send buttons. A short confirmation appears after a note is filed ("Zapisano jako Incydent #1 · 22:40", "saved as incident #1").
+- **Default tab:** Dziennik while the shift is running. The Raport tab is available at any time, because the brief says not to force a choice.
+- **"Zamknij zmianę"** (Dziennik tab) switches to the Raport tab. **"Wyślij raport"** (Raport tab) opens the review (§4.7).
+- **Tab badge:** the number of required gaps, in amber. There's no other count in the header.
+- **Phone:** the same structure. The tabs span the full width under a compact header (back icon, status). Input buttons are ≥44 px. After a note is filed, a short confirmation appears above the input ("Zapisano jako Incydent #1 · 22:40", saved as incident #1).
 
-### 4.2 Notes feed
-- **Each note** shows the time it was recorded (HH:MM), its text and its attachment chips.
-- **Routing tag under processed notes:** a small ✦ plus the targets (for example "Incydent #1", or "Publiczność · Imprezy prywatne"). This is the only place AI work is labelled. It shows where a note went, not who wrote what.
-- **Note states:**
+### 4.2 Dziennik zmiany (journal) and the input
+- **Each entry** shows its recorded time (HH:MM) in a left column, the text, and attachment chips.
+- **Routing tag** under processed entries: a muted "→ Incydent #1" or "→ Publiczność i bezpieczeństwo · Imprezy prywatne". This is the only place where AI work is labelled. It shows where a note went, not who wrote what.
+- **Entry states:**
   - `pending`: "porządkuję…" (organising) with a spinner.
   - `processed`: the routing tag.
   - `failed`: "Nie udało się uporządkować · [Ponów]" (couldn't organise · retry).
-- **AI question:** a bordered block under its note with the question, 0–3 quick replies and a free-text reply field. Answering creates a new note linked to the question (`replyTo`), which is processed like any other note. The question then collapses to show the answer.
-- **Composer:** Enter sends, Shift+Enter adds a new line. 📎 adds a fake file chip (a simulated picker shows a name and type, and images get a placeholder thumbnail).
+  - `waiting`: "czeka na Twoją odpowiedź ↓" (waiting for your answer), in amber, while an AI question about it is open.
+- **AI question card** (above the input, in both tabs): "Pytanie do notatki z 01:48 · <question>" (question about the 01:48 note), with 0–3 quick replies and "…albo odpowiedz poniżej" (or answer below). While the card is open, typing in the input answers it (`replyTo`). The answer is a journal entry, processed like any other. When several questions are open, they're shown one at a time, oldest first.
+- **Input:**
+  - Placeholder in Dziennik: "Co się dzieje? Pisz jak na czacie — np. „23:10 awantura na bramce"" (what's happening? write as in a chat, e.g. "23:10 row at the door").
+  - Placeholder in Raport: "Dopisz coś albo popraw — np. „incydent 2 był o 01:05"" (add something or correct it, e.g. "incident 2 was at 01:05").
+  - Enter sends, Shift+Enter adds a new line. 📎 adds a fake file chip. 🎤 dictates (stretch, D16).
+  - Notes sent from the Raport tab show a toast ("Dodano do dziennika", added to the journal) instead of switching tabs.
 
 ### 4.3 Report: fixed header (Notion-style properties)
 - **Title:** "Raport ze zmiany", large and not editable.
@@ -170,7 +177,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
   3. **Publiczność i bezpieczeństwo** (audience and safety): crowd size, queues, crowding, safety concerns.
   4. **Ochrona** (security)
   5. **Usterki i sprzęt** (faults and equipment)
-- **An empty fixed section** (3–5) shows a muted prompt ("Co z ochroną? Napisz w notatce albo potwierdź.", what about security? write a note or confirm) and a dashed **[Bez uwag]** button. Until it's filled or confirmed, it's an **optional** gap counted in "warto dodać". Clicking writes "Bez uwag." as a manager-authored line.
+- **An empty fixed section** (3–5) shows a muted prompt ("Co z ochroną? Napisz w notatce albo potwierdź.", what about security? write a note or confirm) and a dashed **[Bez uwag]** button. Until it's filled or confirmed, it's an **optional** gap (not counted). Clicking writes "Bez uwag." as a manager-authored line.
 - **Conditional sections** (in the brief's order, after the fixed ones): Ocena bramkarzy (door staff rating), Artyści i ekipa (artists and crew), Produkcja / przebieg / otwarcie drzwi (production, running order, door opening), Bar, Kuchnia (kitchen), Dostawcy zewnętrzni (external suppliers), Imprezy prywatne (private events), Stany magazynowe (stock).
   - They appear when the AI files content there, or when the manager adds one from the hints below.
   - Ocena bramkarzy stays separate from Ochrona, as in the brief.
@@ -189,26 +196,26 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
   - These are hints, not gaps: they're never counted or required.
 
 ### 4.6 Gaps
-- **Field gaps** (missing or estimated type, time, place or description, from the rule in §6.3) are shown **on the field itself**, not as chips: an amber placeholder ("godzina", "miejsce", …) or the amber `? 01:00`, each with an explanatory tooltip. They still count toward "N wymagane".
+- **Field gaps** (missing or estimated type, time, place or description, from the rule in §6.3) are shown **on the field itself**, not as chips: an amber placeholder ("godzina", "miejsce", …) or the amber `? 01:00`, each with an explanatory tooltip. They still count toward the required total (the Raport tab badge).
 - **Question gaps** ("Czy wezwano policję?", were the police called?) are shown as **chips**:
   - `required`: amber fill, bolder text.
   - `optional`: dashed grey outline, muted text.
-  - There is no legend. The two chip styles plus the header count ("3 wymagane · 2 warto dodać") explain themselves.
+  - There is no legend: the two chip styles explain themselves.
 - **Clicking a question chip opens a small popover** with a one-line answer field, pre-filled with the AI's suggestion when there is one. Saving does two things:
   - The answer becomes a **note in the feed**, linked to the gap, so the record stays complete.
   - The note is processed like any other: the AI rewrites it into a natural sentence and appends it to the incident description (or section) with `appendToIncident` / `appendToSection`.
   - The chip disappears straight away. If the AI fails, the fallback appends "<question> <answer>." as plain text, which the manager can polish.
 - Optional chips can be dismissed (×). Required chips can only be answered, or left open and marked in the closed report.
-- **Header:** "⚠ N wymagane" in amber, then "· M warto dodać" in muted grey.
+- **Counts:** the required total is the amber badge on the Raport tab. Optional gaps aren't counted anywhere; they're visible in place.
 
-### 4.7 Closing the shift
-1. **"Zamknij zmianę" opens a review dialog.**
-   - With no required gaps: "Raport kompletny. Zamknąć zmianę?" (report complete, close the shift?) → [Zamknij].
-   - Otherwise it lists the required gaps (each one jumps to its place) with [Uzupełnij] (fill in, the default) and [Zamknij mimo to] (close anyway).
+### 4.7 Sending the report
+1. **"Wyślij raport" opens a review dialog.**
+   - With no required gaps: "Raport kompletny. Wysłać?" (report complete, send?) → [Wyślij].
+   - Otherwise it lists the required gaps (each one jumps to its place) with [Uzupełnij] (fill in, the default) and [Wyślij mimo to] (send anyway).
 2. **The report becomes read-only.**
-   - It shows "Zamknięto 03:07" (closed at 03:07).
+   - It shows "Wysłano 03:07" (sent at 03:07) and the status in the header becomes "Zmiana zamknięta" (shift closed).
    - Unresolved required gaps show as "brak danych" (no data).
-   - Editors, chips and the composer are disabled or hidden.
+   - Editors, chips and the input are disabled or hidden.
    - "Nowa zmiana" (new shift) resets the app to an empty shift.
 
 ### 4.8 Demo
@@ -372,7 +379,7 @@ Plus report-level rule gaps:
 ## 7. Architecture and stack
 
 - **Next.js (App Router) + TypeScript** on **Vercel**. Check the bundled Next docs before using any API.
-- **Tailwind CSS + shadcn/ui** (brief constraint). Neutral theme, dark by default. Components used: Button, Popover, Calendar, Command (combobox), Select, DropdownMenu, Dialog, Tabs, Sonner (toast), Avatar, Textarea, Badge.
+- **Tailwind CSS + shadcn/ui** (brief constraint). Neutral theme, dark by default. Components used: Button, Popover, Calendar, Command (combobox), DropdownMenu, Dialog, Tabs, Tooltip, Sonner (toast), Avatar, Textarea, Badge.
 - **Tiptap** (`@tiptap/react` + starter kit, limited to paragraph, bold, italic and bullet list) for the section editors. Check its React 19 / Next compatibility at scaffold time.
 - **Zustand + `persist`** (localStorage) for the `Shift` store. Components never touch storage directly.
 - **Vercel AI SDK + Google provider + Zod** for structured output. The key is server-only, in `GOOGLE_GENERATIVE_AI_API_KEY`.
@@ -391,9 +398,10 @@ lib/
   ai/prompt.ts  ai/fallback.ts
 store/shift.ts                  # Zustand store, actions, selectors
 components/
-  shift/     Header, CloseDialog, ClosedBanner
-  notes/     Feed, NoteItem, AiQuestion, Composer
-  report/    ReportPanel, ReportHeader (date, author), IncidentBlock, TypeCombobox,
+  shift/     AppHeader (back, status, tabs, primary action), SendDialog, SentBanner
+  journal/   Journal, JournalEntry, AiQuestionCard
+  composer/  Composer (text, attach, mic), useSpeech (stretch)
+  report/    ReportDocument, ReportHeader (date, author), IncidentBlock, TypeCombobox,
              TimePicker, PlacePicker, IncidentMenu, SectionEditor, GapChip, SectionHints
 tests/unit  tests/e2e
 ```
@@ -413,7 +421,7 @@ tests/unit  tests/e2e
   - `rich.ts`: appending, authorship attributes, plain-text extraction.
   - `fallback`.
   - The operation schema, checked against sample model output.
-- **E2E (one Playwright spec, AI route mocked):** load the demo → add a note → it gets processed → answer a required gap inline → edit a section → duplicate and remove an incident (then undo) → close with a gap → the locked view shows "brak danych".
+- **E2E (one Playwright spec, AI route mocked):** load the demo → add a note in Dziennik → it gets processed → answer the AI question card → switch to Raport → answer a question chip → edit a section → confirm "Bez uwag" on Ochrona → duplicate and remove an incident (then undo) → "Wyślij raport" with a gap → the read-only view shows "brak danych".
 - **Manual:** before submission, click through the deployed link with the **real** AI using several messy Polish notes.
 
 ---
@@ -436,7 +444,6 @@ tests/unit  tests/e2e
   - an owner inbox and history
   - PDF/insurer export
   - rating fields
-  - voice dictation
   - real uploads
 
 ### Time budget (8 h)
@@ -448,15 +455,16 @@ tests/unit  tests/e2e
 | Scaffold + deploy pipeline (empty app live) | ~0:30 |
 | Domain logic + tests (types, operations, gaps, rich, seed, fallback) | ~1:15 |
 | AI route + prompt + model choice | ~0:45 |
-| UI: feed, composer, report header, incidents (pickers, menu), section editors, gaps | ~2:30 |
-| Close flow, locked view, phone tabs | ~0:45 |
+| UI: shell + tabs, journal, input + question card, report document (properties, incidents with popovers, section editors, gaps, hints) | ~2:30 |
+| Send flow, read-only view, phone polish | ~0:30 |
+| Stretch: voice dictation | ~0:30 |
 | E2E, polish, README | ~0:45 |
 
 **Cut line, if behind, in this order:**
-1. Duplicate (keep remove with undo).
-2. Pre-filled AI suggestions in question-gap popovers (keep an empty answer field).
-3. Phone tabs (keep a stacked layout).
-4. The time picker dropdown (keep a plain HH:MM input).
+1. Voice dictation.
+2. Duplicate (keep remove with undo).
+3. Pre-filled AI suggestions in question-gap popovers (keep an empty answer field).
+4. The time picker popover (keep a plain HH:MM input in the popover).
 
 ---
 
