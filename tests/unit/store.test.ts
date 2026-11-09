@@ -203,7 +203,7 @@ describe('store', () => {
   })
 
   it('wrong persisted shape falls back to the demo shift', async () => {
-    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: { notes: 5 } }, version: 1 }))
+    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: { notes: 5 } }, version: 2 }))
     vi.resetModules()
     const { useShift } = await import('@/store/shift')
     expect(useShift.getState().shift.id).toBe('demo-shift')
@@ -213,7 +213,7 @@ describe('store', () => {
     const s = createEmptyShift(new Date(2026, 10, 8, 20, 0), createIdGen('p'))
     const { sections: _omit, ...noSections } = s
     void _omit
-    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: noSections, tab: 'journal' }, version: 1 }))
+    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: noSections, tab: 'journal' }, version: 2 }))
     vi.resetModules()
     const { useShift } = await import('@/store/shift')
     expect(useShift.getState().shift.id).toBe('demo-shift')
@@ -221,14 +221,25 @@ describe('store', () => {
 
   it('persisted shift with non-array gaps or questions falls back to the demo shift', async () => {
     const s = createEmptyShift(new Date(2026, 10, 8, 20, 0), createIdGen('p'))
-    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: { ...s, gaps: {} }, tab: 'journal' }, version: 1 }))
+    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: { ...s, gaps: {} }, tab: 'journal' }, version: 2 }))
     vi.resetModules()
     const a = await import('@/store/shift')
     expect(a.useShift.getState().shift.id).toBe('demo-shift')
-    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: { ...s, questions: null }, tab: 'journal' }, version: 1 }))
+    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: { ...s, questions: null }, tab: 'journal' }, version: 2 }))
     vi.resetModules()
     const b = await import('@/store/shift')
     expect(b.useShift.getState().shift.id).toBe('demo-shift')
+  })
+
+  it('v1 data (string routedTo labels) resets to the demo shift', async () => {
+    const s = createEmptyShift(new Date(2026, 10, 8, 20, 0), createIdGen('p'))
+    s.notes.push({ id: 'n1', createdAt: s.startedAt, text: 'a', attachments: [], status: 'processed', routedTo: ['Incydent #1'] as never })
+    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: s, tab: 'report' }, version: 1 }))
+    vi.resetModules()
+    const { useShift } = await import('@/store/shift')
+    expect(useShift.getState().shift.id).toBe('demo-shift')
+    expect(useShift.getState().tab).toBe('journal')
+    expect(useShift.getState().shift.notes.every((n) => n.routedTo.every((t) => typeof t === 'object'))).toBe(true)
   })
 
   it('notes persisted as pending rehydrate as failed so they can be retried', async () => {
@@ -238,7 +249,7 @@ describe('store', () => {
       { ...base, id: 'n-pending', text: 'a', status: 'pending' },
       { ...base, id: 'n-done', text: 'b', status: 'processed' },
     )
-    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: s, tab: 'report' }, version: 1 }))
+    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: s, tab: 'report' }, version: 2 }))
     vi.resetModules()
     const { useShift } = await import('@/store/shift')
     const st = useShift.getState()

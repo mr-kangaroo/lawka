@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { format } from 'date-fns'
 import { pl } from 'date-fns/locale'
+import { routeLabel } from '@/lib/report/operations'
 import { PEOPLE } from '@/lib/report/people'
 import { useShift } from '@/store/shift'
 import { isAwaitingAnswer } from './ai-question-card'
@@ -25,6 +26,13 @@ export function Journal() {
 
   const waitingNoteIds = useMemo(
     () => new Set(shift.sentAt ? [] : shift.questions.filter((q) => isAwaitingAnswer(shift, q)).map((q) => q.noteId)),
+    [shift],
+  )
+  const routeLabels = useMemo(
+    () =>
+      new Map(
+        shift.notes.map((n) => [n.id, n.routedTo.map((t) => routeLabel(shift, t)).filter((l): l is string => l !== null)]),
+      ),
     [shift],
   )
   const author = PEOPLE.find((p) => p.id === shift.authorId)
@@ -63,7 +71,12 @@ export function Journal() {
       </p>
       <ol ref={listRef}>
         {shift.notes.map((note) => (
-          <JournalEntry key={note.id} note={note} waiting={waitingNoteIds.has(note.id)} />
+          <JournalEntry
+            key={note.id}
+            note={note}
+            waiting={waitingNoteIds.has(note.id)}
+            routeLabels={routeLabels.get(note.id) ?? []}
+          />
         ))}
       </ol>
       <div ref={endRef} />

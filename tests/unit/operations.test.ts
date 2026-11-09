@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createIdGen } from '@/lib/report/ids'
-import { OperationsResponseSchema, applyOperations, sortIncidents, type Operation } from '@/lib/report/operations'
+import { OperationsResponseSchema, applyOperations, routeLabel, sortIncidents, type Operation } from '@/lib/report/operations'
 import { docToPlainText, paragraphsToBlocks } from '@/lib/report/rich'
 import type { Incident, Note, Shift } from '@/lib/report/types'
 
@@ -158,7 +158,36 @@ describe('applyOperations', () => {
 
   it('routedTo lists applied targets in order', () => {
     const out = apply(shift(), [add, { op: 'appendToSection', key: 'maintenance', paragraphs: ['Awaria'] }])
-    expect(out.notes[0].routedTo).toEqual(['Incydent #1', 'Usterki i sprzęt'])
+    expect(out.notes[0].routedTo).toEqual([
+      { kind: 'incident', incidentId: out.incidents[0].id },
+      { kind: 'section', key: 'maintenance' },
+    ])
+    expect(out.notes[0].routedTo.map((t) => routeLabel(out, t))).toEqual(['Incydent #1', 'Usterki i sprzęt'])
+  })
+
+  it('routedTo dedupes a target touched twice', () => {
+    const out = apply(shift(), [
+      { op: 'appendToSection', key: 'bar', paragraphs: ['A'] },
+      { op: 'appendToSection', key: 'bar', paragraphs: ['B'] },
+    ])
+    expect(out.notes[0].routedTo).toEqual([{ kind: 'section', key: 'bar' }])
+  })
+
+  it('routeLabel renumbers after an earlier-timed incident is added', () => {
+    const s = shift({ startedAt: new Date(2026, 10, 8, 20, 0).toISOString(), notes: [note(), note({ id: 'n2' })] })
+    const ids = createIdGen('r') // one generator, so the two incidents get distinct ids
+    const late = applyOperations(s, [{ op: 'addIncident', type: 'Zasłabnięcie', description: 'A', time: { hhmm: '01:00', approx: true } }], 'n1', now, ids)
+    const lateTarget = late.notes[0].routedTo[0]
+    expect(routeLabel(late, lateTarget)).toBe('Incydent #1')
+    const withEarlier = applyOperations(late, [{ op: 'addIncident', type: 'Bójka', description: 'B', time: { hhmm: '23:10', approx: false } }], 'n2', now, ids)
+    expect(routeLabel(withEarlier, withEarlier.notes[1].routedTo[0])).toBe('Incydent #1')
+    expect(routeLabel(withEarlier, lateTarget)).toBe('Incydent #2')
+  })
+
+  it('routeLabel is null for a removed incident', () => {
+    const out = apply(shift(), [add])
+    const target = out.notes[0].routedTo[0]
+    expect(routeLabel({ ...out, incidents: [] }, target)).toBeNull()
   })
 
   it('attachments go to the first fed section when no incident was touched', () => {
@@ -188,7 +217,7 @@ describe('applyOperations', () => {
       { op: 'appendToSection', key: 'kitchen', paragraphs: ['K'] },
     ])
     expect(out.sections.bar).toBeUndefined()
-    expect(out.notes[0].routedTo).toEqual(['Kuchnia'])
+    expect(out.notes[0].routedTo).toEqual([{ kind: 'section', key: 'kitchen' }])
     expect(out.sections.kitchen?.attachments).toEqual([att])
   })
 

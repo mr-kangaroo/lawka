@@ -1,6 +1,7 @@
 'use client'
 
-import { AiQuestionCard } from '@/components/journal/ai-question-card'
+import { useState } from 'react'
+import { AiQuestionCard, useOpenQuestion } from '@/components/journal/ai-question-card'
 import { Journal } from '@/components/journal/journal'
 import { Composer } from '@/components/composer/composer'
 import { ReportDocument } from '@/components/report/report-document'
@@ -34,6 +35,9 @@ export function AppShell({ onSend }: AppShellProps) {
   const hydrated = useHasHydrated()
   const tab = useShift((s) => s.tab)
   const setTab = useShift((s) => s.setTab)
+  // Reply mode is UI state: the question id the composer's next note answers.
+  const [replyTo, setReplyTo] = useState<string | null>(null)
+  const shownQuestion = useOpenQuestion()
 
   if (!hydrated) return <div className="h-dvh bg-background" />
 
@@ -56,8 +60,13 @@ export function AppShell({ onSend }: AppShellProps) {
       </main>
       <div className="px-3 pt-0 pb-4 sm:border-t sm:border-border/60 sm:px-6 sm:pt-3 sm:pb-5">
         <div className="mx-auto flex w-full max-w-[720px] flex-col gap-2.5">
-          <AiQuestionCard />
-          <Composer placeholder={PLACEHOLDERS[tab]} compactPlaceholder={COMPACT_PLACEHOLDERS[tab]} />
+          <AiQuestionCard onReply={(id) => setReplyTo((cur) => (cur === id ? null : id))} replying={!!replyTo && replyTo === shownQuestion?.id} />
+          <Composer
+            placeholder={PLACEHOLDERS[tab]}
+            compactPlaceholder={COMPACT_PLACEHOLDERS[tab]}
+            replyTo={replyTo}
+            onReplyEnd={() => setReplyTo(null)}
+          />
         </div>
       </div>
     </Tabs>

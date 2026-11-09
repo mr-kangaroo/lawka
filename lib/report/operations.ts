@@ -18,6 +18,7 @@ import type {
   Gap,
   ISO,
   Incident,
+  RouteTarget,
   Section,
   SectionKey,
   Shift,
@@ -93,7 +94,12 @@ export function sortIncidents(shift: Shift): Incident[] {
   return [...timed, ...untimed]
 }
 
-type Target = { kind: 'incident'; id: string } | { kind: 'section'; key: SectionKey }
+/** Label for a routing target: "Incydent #N" (current order) or the section label; null if the incident was removed. */
+export function routeLabel(shift: Shift, target: RouteTarget): string | null {
+  if (target.kind === 'section') return SECTION_LABELS[target.key]
+  const index = sortIncidents(shift).findIndex((i) => i.id === target.incidentId)
+  return index < 0 ? null : `Incydent #${index + 1}`
+}
 
 export function applyOperations(
   shift: Shift,
@@ -108,8 +114,8 @@ export function applyOperations(
   const aiField = <T>(value: T): Field<T> => ({ value, prov: { by: 'ai', at: now, sourceNoteIds: [noteId] } })
   const noteAttachments: Attachment[] = note ? structuredClone(note.attachments) : []
 
-  const targets: Target[] = []
-  const touch = (t: Target) => {
+  const targets: RouteTarget[] = []
+  const touch = (t: RouteTarget) => {
     if (!targets.some((x) => JSON.stringify(x) === JSON.stringify(t))) targets.push(t)
   }
   const addSource = (inc: Incident) => {
@@ -157,7 +163,7 @@ export function applyOperations(
         s.incidents.push(inc)
         createdIds.push(inc.id)
         s.noIncidentsConfirmed = false
-        touch({ kind: 'incident', id: inc.id })
+        touch({ kind: 'incident', incidentId: inc.id })
         break
       }
       case 'updateIncident': {
@@ -179,7 +185,7 @@ export function applyOperations(
         }
         if (changed) {
           addSource(inc)
-          touch({ kind: 'incident', id: inc.id })
+          touch({ kind: 'incident', incidentId: inc.id })
         }
         break
       }
@@ -189,7 +195,7 @@ export function applyOperations(
         inc.description = appendSentence(inc.description ?? emptyDoc(), op.text, attrs())
         addSource(inc)
         giveAttachmentsToIncident(inc)
-        touch({ kind: 'incident', id: inc.id })
+        touch({ kind: 'incident', incidentId: inc.id })
         break
       }
       case 'appendToSection': {
@@ -250,13 +256,8 @@ export function applyOperations(
   }
 
   if (note) {
-    const sorted = sortIncidents(s)
     note.status = 'processed'
-    note.routedTo = targets.map((t) =>
-      t.kind === 'section'
-        ? SECTION_LABELS[t.key]
-        : `Incydent #${sorted.findIndex((i) => i.id === t.id) + 1}`,
-    )
+    note.routedTo = targets
     if (note.replyTo) {
       const q = s.questions.find((x) => x.id === note.replyTo)
       if (q) q.status = 'answered'

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { CheckIcon } from 'lucide-react'
-import { sortIncidents } from '@/lib/report/operations'
+import { routeLabel } from '@/lib/report/operations'
 import { formatHHMM } from '@/lib/report/time'
 import type { Note, Shift } from '@/lib/report/types'
 import { useShift } from '@/store/shift'
@@ -12,11 +12,11 @@ const VISIBLE_MS = 4000
 type Filed = { target: string; time: string }
 
 /** "Incydent #1 · 22:40": an incident shows its event time, anything else the note's time. */
-function filedAs(shift: Shift, note: Note): Filed {
-  const target = note.routedTo[0]
-  const match = /^Incydent #(\d+)$/.exec(target)
-  const incident = match ? sortIncidents(shift)[Number(match[1]) - 1] : undefined
-  return { target, time: incident?.time?.value.hhmm ?? formatHHMM(note.createdAt) }
+function filedAs(shift: Shift, note: Note): Filed | null {
+  const route = note.routedTo.find((t) => routeLabel(shift, t) !== null)
+  if (!route) return null
+  const incident = route.kind === 'incident' ? shift.incidents.find((i) => i.id === route.incidentId) : undefined
+  return { target: routeLabel(shift, route)!, time: incident?.time?.value.hhmm ?? formatHHMM(note.createdAt) }
 }
 
 /** Phone-only confirmation above the input after a note is filed (spec §4.1). */
@@ -31,8 +31,9 @@ export function FiledConfirmation() {
       const note = state.shift.notes.findLast(
         (n) => n.status === 'processed' && n.routedTo.length > 0 && before.get(n.id) === 'pending',
       )
-      if (!note) return
-      setFiled(filedAs(state.shift, note))
+      const next = note && filedAs(state.shift, note)
+      if (!next) return
+      setFiled(next)
       clearTimeout(timer)
       timer = setTimeout(() => setFiled(null), VISIBLE_MS)
     })

@@ -1,13 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import { createIdGen } from '@/lib/report/ids'
 import { openGaps, requiredCount } from '@/lib/report/gaps'
-import { sortIncidents } from '@/lib/report/operations'
+import { routeLabel, sortIncidents } from '@/lib/report/operations'
 import { createDemoShift, createEmptyShift } from '@/lib/report/seed'
 
 describe('seed', () => {
   it('demo shift has 2 incidents sorted Bójka then Zasłabnięcie', () => {
     const s = createDemoShift()
     expect(sortIncidents(s).map((i) => i.type?.value)).toEqual(['Bójka', 'Zasłabnięcie / pomoc medyczna'])
+  })
+  it('demo notes route to structured targets with the expected labels', () => {
+    const s = createDemoShift()
+    const labels = Object.fromEntries(s.notes.map((n) => [n.id, n.routedTo.map((t) => routeLabel(s, t))]))
+    expect(labels).toEqual({
+      'demo-n1': ['Publiczność i bezpieczeństwo', 'Imprezy prywatne'],
+      'demo-n2': ['Incydent #1'],
+      'demo-n3': ['Usterki i sprzęt'],
+      'demo-n4': ['Incydent #2'],
+      'demo-n5': [],
+      'demo-n6': ['Publiczność i bezpieczeństwo', 'Podsumowanie'],
+    })
+    expect(s.notes[1].routedTo).toEqual([{ kind: 'incident', incidentId: sortIncidents(s)[0].id }])
   })
   it('demo shift requiredCount is 3', () => {
     expect(requiredCount(createDemoShift())).toBe(3)

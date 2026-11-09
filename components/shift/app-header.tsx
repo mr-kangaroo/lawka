@@ -24,28 +24,35 @@ function ShiftStatus() {
   )
 }
 
+/** 32 px visually; on phones a 44 px hit area (the trigger is already `relative`). */
+const TRIGGER =
+  'h-8 flex-1 rounded-[7px] px-3.5 sm:flex-none max-sm:before:absolute max-sm:before:inset-x-0 max-sm:before:-inset-y-1.5'
+
 function ShiftTabs() {
   const required = useShift((s) => requiredCount(s.shift))
   return (
     <TabsList aria-label="Widok zmiany" className="h-10 w-full rounded-[10px] border border-border bg-card/60 sm:w-fit">
-      <TabsTrigger value="journal" className="h-8 flex-1 rounded-[7px] px-3.5 sm:flex-none">
+      <TabsTrigger value="journal" className={TRIGGER}>
         <span className="sm:hidden">Dziennik</span>
         <span className="hidden sm:inline">Dziennik zmiany</span>
       </TabsTrigger>
-      <TabsTrigger value="report" className="h-8 flex-1 rounded-[7px] px-3.5 sm:flex-none">
+      <TabsTrigger value="report" className={TRIGGER}>
         Raport
         {required > 0 && (
           <Badge
-            aria-label={`${required} do uzupełnienia`}
             className="h-[18px] min-w-[18px] border-required-border bg-required-bg px-1.5 text-[11px] font-semibold text-required"
           >
             {required}
+            <span className="sr-only"> do uzupełnienia</span>
           </Badge>
         )}
       </TabsTrigger>
     </TabsList>
   )
 }
+
+/** 36 px visually; on phones a 44 px hit area. */
+const PRIMARY = 'relative h-9 px-3 sm:px-4 max-sm:before:absolute max-sm:before:inset-x-0 max-sm:before:-inset-y-1'
 
 /**
  * Top bar: back (placeholder), shift status, the Dziennik/Raport tabs and the primary action.
@@ -58,11 +65,11 @@ export function AppHeader({ onSend }: AppHeaderProps) {
 
   const primary =
     tab === 'journal' ? (
-      <Button onClick={() => setTab('report')} className="h-9 px-3 sm:px-4">
+      <Button onClick={() => setTab('report')} className={PRIMARY}>
         Zamknij zmianę
       </Button>
     ) : (
-      <Button onClick={onSend} disabled={sent} className="h-9 px-3 sm:px-4">
+      <Button onClick={onSend} disabled={sent} className={PRIMARY}>
         Wyślij raport
       </Button>
     )

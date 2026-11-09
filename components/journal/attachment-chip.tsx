@@ -15,7 +15,7 @@ export function AttachmentChip({ attachment, onRemove }: { attachment: Attachmen
           type="button"
           onClick={onRemove}
           aria-label={`Usuń ${attachment.name}`}
-          className="-mr-1 grid size-4 place-items-center rounded-sm text-muted-foreground hover:text-foreground"
+          className="relative -mr-1 grid size-4 place-items-center rounded-sm text-muted-foreground before:absolute before:-inset-3.5 hover:text-foreground"
         >
           <XIcon className="size-3" aria-hidden />
         </button>

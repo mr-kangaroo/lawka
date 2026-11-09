@@ -1,7 +1,7 @@
 import type { IdGen } from './ids'
 import { createIdGen } from './ids'
 import { applyOperations, type Operation } from './operations'
-import type { Attachment, ISO, Note, Shift } from './types'
+import type { Attachment, ISO, Note, RouteTarget, Shift } from './types'
 
 function pad(n: number): string {
   return String(n).padStart(2, '0')
@@ -122,11 +122,13 @@ export function createDemoShift(): Shift {
       status: 'pending', routedTo: [],
     }
     shift = { ...shift, notes: [...shift.notes, note] }
-    const routed: string[] = []
+    const routed: RouteTarget[] = []
     for (const stage of dn.stages) {
       shift = applyOperations(shift, stage(shift), dn.id, createdAt, newId)
       const n = shift.notes.find((x) => x.id === dn.id)!
-      for (const r of n.routedTo) if (!routed.includes(r)) routed.push(r)
+      for (const r of n.routedTo) {
+        if (!routed.some((x) => JSON.stringify(x) === JSON.stringify(r))) routed.push(r)
+      }
       n.routedTo = routed
     }
   }

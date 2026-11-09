@@ -1,11 +1,21 @@
 'use client'
 
-import { useId, useState, useSyncExternalStore, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
-import { ArrowUpIcon, PaperclipIcon } from 'lucide-react'
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react'
+import { ArrowUpIcon, CornerDownLeftIcon, PaperclipIcon, XIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { AttachmentChip } from '@/components/journal/attachment-chip'
-import { useOpenQuestion } from '@/components/journal/ai-question-card'
+import { isAwaitingAnswer } from '@/components/journal/ai-question-card'
 import { Button } from '@/components/ui/button'
+import { formatHHMM } from '@/lib/report/time'
 import type { Attachment } from '@/lib/report/types'
 import { useShift } from '@/store/shift'
 import { pickFakeAttachment } from './fake-attach'
@@ -30,30 +40,49 @@ export type ComposerProps = {
   compactPlaceholder?: string
   /** Slot for the dictation button (Task 13). Renders nothing when omitted. */
   voiceSlot?: ReactNode
+  /**
+   * Reply mode: the AI question (id) the next submit answers. Set by the question card's
+   * "Odpowiedz"; ignored once that question is no longer awaiting an answer.
+   */
+  replyTo?: string | null
+  /** Leaves reply mode: called after a reply is submitted and when the chip's × is clicked. */
+  onReplyEnd?: () => void
 }
 
 /**
  * The single input pinned at the bottom of both tabs (spec §4.2).
- * Enter submits, Shift+Enter adds a new line. While the AI question card is open, a
- * submitted note answers that question (`replyTo`).
+ * Enter submits, Shift+Enter adds a new line. Notes are independent unless the composer is
+ * in reply mode (`replyTo`), entered explicitly from the question card.
  */
-export function Composer({ placeholder, compactPlaceholder, voiceSlot }: ComposerProps) {
+export function Composer({ placeholder, compactPlaceholder, voiceSlot, replyTo, onReplyEnd }: ComposerProps) {
   const id = useId()
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const isPhone = useIsPhone()
   const [text, setText] = useState('')
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const submitNote = useShift((s) => s.submitNote)
   const tab = useShift((s) => s.tab)
   const sent = useShift((s) => Boolean(s.shift.sentAt))
-  const question = useOpenQuestion()
+  const replyQuestion = useShift((s) =>
+    replyTo ? s.shift.questions.find((q) => q.id === replyTo && isAwaitingAnswer(s.shift, q)) : undefined,
+  )
+  const replyNoteTime = useShift((s) => {
+    const note = replyQuestion && s.shift.notes.find((n) => n.id === replyQuestion.noteId)
+    return note ? formatHHMM(note.createdAt) : null
+  })
+
+  useEffect(() => {
+    if (replyTo) textareaRef.current?.focus()
+  }, [replyTo])
 
   const canSubmit = !sent && (text.trim().length > 0 || attachments.length > 0)
 
   function submit() {
     if (!canSubmit) return
-    void submitNote(text, attachments, question ? { replyTo: question.id } : undefined)
+    void submitNote(text, attachments, replyQuestion ? { replyTo: replyQuestion.id } : undefined)
     setText('')
     setAttachments([])
+    if (replyTo) onReplyEnd?.()
     if (tab === 'report') toast('Dodano do dziennika')
   }
 
@@ -76,8 +105,25 @@ export function Composer({ placeholder, compactPlaceholder, voiceSlot }: Compose
         onSubmit={onSubmit}
         className="flex flex-col gap-2 rounded-2xl border border-input bg-muted/40 p-2 focus-within:border-ring sm:rounded-[14px] sm:py-2.5 sm:pr-2.5 sm:pl-3.5"
       >
-        {attachments.length > 0 && (
+        {(replyQuestion || attachments.length > 0) && (
           <div className="flex flex-wrap gap-1.5 px-1 pt-1 sm:px-0">
+            {replyQuestion && (
+              <span className="inline-flex h-6 items-center gap-1.5 rounded-md bg-muted px-2 text-xs text-foreground">
+                <CornerDownLeftIcon className="size-3" aria-hidden />
+                Odpowiadasz na pytanie z {replyNoteTime}
+                <button
+                  type="button"
+                  onClick={() => {
+                    onReplyEnd?.()
+                    textareaRef.current?.focus()
+                  }}
+                  aria-label="Anuluj odpowiedź"
+                  className="relative -mr-1 grid size-4 place-items-center rounded-sm text-muted-foreground before:absolute before:-inset-3.5 hover:text-foreground"
+                >
+                  <XIcon className="size-3" aria-hidden />
+                </button>
+              </span>
+            )}
             {attachments.map((a) => (
               <AttachmentChip
                 key={a.id}
@@ -93,6 +139,7 @@ export function Composer({ placeholder, compactPlaceholder, voiceSlot }: Compose
           </label>
           <textarea
             id={id}
+            ref={textareaRef}
             rows={1}
             value={text}
             disabled={sent}
@@ -119,11 +166,13 @@ export function Composer({ placeholder, compactPlaceholder, voiceSlot }: Compose
           <Button
             type="submit"
             disabled={!canSubmit}
-            aria-label="Dodaj notatkę"
             className="size-11 rounded-full sm:h-9 sm:w-auto sm:rounded-lg sm:px-3.5"
           >
             <ArrowUpIcon className="sm:hidden" aria-hidden />
-            <span className="hidden sm:inline">Dodaj ↵</span>
+            <span className="max-sm:sr-only">Dodaj</span>
+            <span aria-hidden className="hidden sm:inline">
+              ↵
+            </span>
           </Button>
         </div>
       </form>
