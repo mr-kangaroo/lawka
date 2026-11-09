@@ -18,7 +18,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="pl" className={`dark ${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <TooltipProvider>{children}</TooltipProvider>
-        <Toaster theme="dark" position="top-center" />
+        <Toaster theme="dark" position="bottom-right" offset={{ bottom: 120, right: 24 }} mobileOffset={{ bottom: 96 }} />
       </body>
     </html>
   );

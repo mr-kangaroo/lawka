@@ -37,7 +37,7 @@ function EntryStatus({ note, waiting, routeLabels }: EntryProps) {
       </span>
     )
   if (routeLabels.length > 0)
-    return <span className="text-[13px] text-muted-foreground">→ {routeLabels.join(' · ')}</span>
+    return <span className="text-[13px] text-muted-foreground">{routeLabels.join(' · ')}</span>
   return null
 }
 
@@ -54,9 +54,13 @@ export function JournalEntry({ note, waiting, routeLabels }: EntryProps) {
   const hasMeta = note.attachments.length > 0 || waiting || note.status !== 'processed' || routeLabels.length > 0
   return (
     <li className="grid grid-cols-[44px_minmax(0,1fr)] gap-3 border-b border-border/50 py-3 sm:grid-cols-[56px_minmax(0,1fr)]">
-      <time dateTime={note.createdAt} className="pt-0.5 text-[13px] text-muted-foreground tabular-nums">
-        {formatHHMM(note.createdAt)}
-      </time>
+      {note.fromReport ? (
+        <span aria-hidden />
+      ) : (
+        <time dateTime={note.createdAt} className="pt-0.5 text-[13px] text-muted-foreground tabular-nums">
+          {formatHHMM(note.createdAt)}
+        </time>
+      )}
       <div className="flex flex-col gap-1.5">
         {note.text && <p className="break-words whitespace-pre-wrap">{note.text}</p>}
         {hasMeta && (

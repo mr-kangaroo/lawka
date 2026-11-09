@@ -15,6 +15,7 @@ export type Note = {
   attachments: Attachment[]
   replyTo?: string // AiQuestion.id: the note answers an AiQuestion
   answersGapId?: string // the note answers a question chip
+  fromReport?: boolean // written in the Raport tab (a correction or an answer): shown without a time
   status: 'pending' | 'processed' | 'failed'
   routedTo: RouteTarget[] // targets for the routing tag, deduped, in order
 }

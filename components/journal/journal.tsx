@@ -36,7 +36,14 @@ export function Journal() {
   const routeLabels = useMemo(
     () =>
       new Map(
-        shift.notes.map((n) => [n.id, n.routedTo.map((t) => routeLabel(shift, t)).filter((l): l is string => l !== null)]),
+        shift.notes.map((n) => [
+          n.id,
+          // The summary is rewritten by most notes, so it is not worth a label.
+          n.routedTo
+            .filter((t) => !(t.kind === 'section' && t.key === 'summary'))
+            .map((t) => routeLabel(shift, t))
+            .filter((l): l is string => l !== null),
+        ]),
       ),
     [shift],
   )

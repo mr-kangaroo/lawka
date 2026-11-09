@@ -149,6 +149,7 @@ export const useShift = create<ShiftState>()(
               attachments: structuredClone(attachments),
               ...(opts?.replyTo ? { replyTo: opts.replyTo } : {}),
               ...(opts?.answersGapId ? { answersGapId: opts.answersGapId } : {}),
+              ...(get().tab === 'report' || opts?.answersGapId ? { fromReport: true } : {}),
               status: 'pending',
               routedTo: [],
             })

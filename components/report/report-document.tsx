@@ -42,7 +42,7 @@ export function ReportDocument() {
       className="flex flex-col pt-6 pb-6 text-[15px] leading-[1.65] text-foreground/90 sm:px-6 sm:pt-8"
     >
       <SentBanner />
-      <header className="mb-6 flex flex-col gap-3">
+      <header className="mb-8 flex flex-col gap-3">
         <h1 className="mb-1 text-[28px] leading-tight font-semibold text-foreground">Raport ze zmiany</h1>
         <ReportProperties readOnly={readOnly} />
         <div className="mt-2 h-px bg-border" />
@@ -51,12 +51,12 @@ export function ReportDocument() {
       <SectionBlock sectionKey="summary" readOnly={readOnly} className="mt-2" />
       <Incidents />
       {[...FIXED_AFTER_INCIDENTS, ...conditional].map((key) => (
-        <SectionBlock key={key} sectionKey={key} readOnly={readOnly} autoFocus={key === added} className="mt-5" />
+        <SectionBlock key={key} sectionKey={key} readOnly={readOnly} autoFocus={key === added} className="mt-10" />
       ))}
 
       {!readOnly && (
         <SectionHints
-          className="mt-7"
+          className="mt-12"
           onAdd={(key) => {
             addSection(key)
             setAdded(key)
