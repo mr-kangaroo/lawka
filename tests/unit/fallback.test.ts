@@ -17,6 +17,7 @@ const context = (extra: Partial<AiContext> = {}): AiContext => ({
   shiftDate: '2026-11-08',
   startHHMM: '20:00',
   nowHHMM: '23:20',
+  noteHHMM: '23:20',
   incidents: [],
   sections: [],
   openGaps: [],
@@ -49,13 +50,14 @@ describe('fallbackOperations', () => {
     ])
   })
 
-  it('without a time token uses the note time with approx: true', () => {
-    const ops = fallbackOperations(note('Ktoś zasłabł na parkiecie, wezwana karetka'), context())
+  it('fallback uses context.noteHHMM (never the server clock) with approx: true when there is no time token', () => {
+    // createdAt says 23:20 local; the client-computed noteHHMM wins.
+    const ops = fallbackOperations(note('Ktoś zasłabł na parkiecie, wezwana karetka'), context({ noteHHMM: '00:47' }))
     expect(ops).toEqual([
       {
         op: 'addIncident',
         type: 'Zasłabnięcie / pomoc medyczna',
-        time: { hhmm: '23:20', approx: true },
+        time: { hhmm: '00:47', approx: true },
         description: 'Ktoś zasłabł na parkiecie, wezwana karetka',
       },
     ])
@@ -94,6 +96,27 @@ describe('fallbackOperations', () => {
     expect(fallbackOperations(note('tak, spokojnie', { answersGapId: 'rule:no-incidents' }), ctx)).toEqual([
       { op: 'resolveGap', gapId: 'rule:no-incidents' },
     ])
+  })
+
+  it('"zgubiony bilet na szatnię" returns null', () => {
+    expect(fallbackOperations(note('zgubiony bilet na szatnię'), context())).toBeNull()
+    expect(fallbackOperations(note('sprzedaliśmy 300 biletów, gość zgubił się w szatni'), context())).toBeNull()
+  })
+
+  it('matches fight verb forms', () => {
+    for (const text of ['ochroniarz pobił gościa', 'dwóch gości biło się przy barze', 'bili się na parkiecie', 'bił się z kolegą', 'bójka w palarni', 'bijatyka przed lokalem']) {
+      expect(fallbackOperations(note(text), context())?.[0], text).toMatchObject({ op: 'addIncident', type: 'Bójka' })
+    }
+  })
+
+  it('"awantura, 300 zł szkody" uses noteHHMM with approx', () => {
+    expect(fallbackOperations(note('awantura, 300 zł szkody'), context({ noteHHMM: '01:12' }))).toEqual([
+      { op: 'addIncident', type: 'Bójka', time: { hhmm: '01:12', approx: true }, description: 'awantura, 300 zł szkody' },
+    ])
+    // Bare numbers like "12 osób" or "2026" are never read as times.
+    expect(fallbackOperations(note('awantura 12 osób, rok 2026'), context({ noteHHMM: '01:12' }))?.[0]).toMatchObject({
+      time: { hhmm: '01:12', approx: true },
+    })
   })
 
   it('unrelated text returns null', () => {

@@ -1,12 +1,13 @@
 import type { AiContext } from '@/lib/ai/client'
 import type { Operation } from '@/lib/report/operations'
 import { normalizeForSearch } from '@/lib/report/search'
-import { formatHHMM, parseHHMM } from '@/lib/report/time'
+import { parseHHMM } from '@/lib/report/time'
 import type { EventTime, Note } from '@/lib/report/types'
 
 /** Keyword heuristics on normalized text (lowercase, no diacritics), checked in order (spec §6.4). */
 const KEYWORD_TYPES: Array<[RegExp, string]> = [
-  [/bojk|bil|bijatyk|awantur/, 'Bójka'],
+  // Fight verbs only as whole words ("bił się", "bili się", "pobił"), so "bilet" or "zgubił się" never match.
+  [/bojk|bijatyk|awantur|\bpobil|\bbi(l[aoiy]?|ja|je) sie\b/, 'Bójka'],
   [/kradz|ukradl/, 'Kradzież'],
   [/zaslabl|karetk|omdl/, 'Zasłabnięcie / pomoc medyczna'],
 ]
@@ -21,11 +22,14 @@ function questionAndAnswer(question: string, answer: string): string {
   return `${question.trim()} ${/[.!?…]$/.test(a) ? a : `${a}.`}`
 }
 
-/** First whitespace-separated token that parses as HH:MM (trailing punctuation ignored). */
+/**
+ * First whitespace-separated token that looks like a time with a separator ("23:10", "1.25"), trailing punctuation
+ * ignored. Bare numbers ("300", "2026") are never read as times.
+ */
 function firstTime(text: string): string | null {
   for (const raw of text.split(/\s+/)) {
     const token = raw.replace(/^[(„"']+|[),;:!?"”'.]+$/g, '')
-    const hhmm = token ? parseHHMM(token) : null
+    const hhmm = /^\d{1,2}[:.]\d{2}$/.test(token) ? parseHHMM(token) : null
     if (hhmm) return hhmm
   }
   return null
@@ -47,6 +51,6 @@ export function fallbackOperations(note: Note, context: AiContext): Operation[] 
   const match = KEYWORD_TYPES.find(([re]) => re.test(normalized))
   if (!match) return null
   const hhmm = firstTime(note.text)
-  const time: EventTime = hhmm ? { hhmm, approx: false } : { hhmm: formatHHMM(note.createdAt), approx: true }
+  const time: EventTime = hhmm ? { hhmm, approx: false } : { hhmm: context.noteHHMM, approx: true }
   return [{ op: 'addIncident', type: match[1], time, description: note.text }]
 }

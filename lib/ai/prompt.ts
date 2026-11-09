@@ -1,6 +1,5 @@
 import type { AiContext } from '@/lib/ai/client'
 import { INCIDENT_FIELD_QUESTIONS, INCIDENT_TYPES, SECTION_LABELS, VENUE_AREAS } from '@/lib/report/catalog'
-import { formatHHMM } from '@/lib/report/time'
 import type { Note, SectionKey } from '@/lib/report/types'
 
 const SECTION_MEANINGS: Record<SectionKey, string> = {
@@ -94,7 +93,7 @@ Do not add a gap whose question is already in context.openGaps for the same targ
 }
 
 export function buildUserPrompt(note: Note, context: AiContext): string {
-  return `Note written at ${formatHHMM(note.createdAt)}:
+  return `Note written at ${context.noteHHMM}:
 """
 ${note.text}
 """

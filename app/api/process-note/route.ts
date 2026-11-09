@@ -26,6 +26,7 @@ const BodySchema = z.object({
     shiftDate: z.string(),
     startHHMM: z.string(),
     nowHHMM: z.string(),
+    noteHHMM: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
     incidents: z.array(z.looseObject({ id: z.string(), number: z.number() })),
     sections: z.array(z.looseObject({ key: z.string(), text: z.string() })),
     openGaps: z.array(GapRefSchema),

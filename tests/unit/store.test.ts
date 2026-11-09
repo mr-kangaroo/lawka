@@ -316,4 +316,16 @@ describe('buildContext', () => {
     expect(ctx.nowHHMM).toBe('22:05')
     expect(ctx.shiftDate).toBe('2026-11-08')
   })
+
+  it("buildContext sets noteHHMM from the note's local time", async () => {
+    const { buildContext } = await import('@/lib/ai/client')
+    const { fresh } = await load()
+    const note = {
+      id: 'n1', createdAt: new Date(2026, 10, 8, 23, 7).toISOString(), text: 't', attachments: [],
+      status: 'pending' as const, routedTo: [],
+    }
+    const ctx = buildContext(fresh(), note, new Date(2026, 10, 8, 23, 40))
+    expect(ctx.noteHHMM).toBe('23:07')
+    expect(ctx.nowHHMM).toBe('23:40')
+  })
 })

@@ -23,7 +23,7 @@ describe('prompt', () => {
   it('user prompt contains the note text and context JSON', () => {
     const note: Note = {
       id: 'n1',
-      createdAt: new Date(2026, 10, 8, 23, 12).toISOString(),
+      createdAt: '2026-11-08T22:12:00.000Z',
       text: 'awantura na bramce 23:10',
       attachments: [],
       status: 'pending',
@@ -32,7 +32,8 @@ describe('prompt', () => {
     const context: AiContext = {
       shiftDate: '2026-11-08',
       startHHMM: '20:00',
-      nowHHMM: '23:12',
+      nowHHMM: '23:15',
+      noteHHMM: '23:12',
       incidents: [{ id: 'i1', number: 1, type: 'Bójka', description: 'x', managerFields: [] }],
       sections: [],
       openGaps: [],
@@ -40,7 +41,7 @@ describe('prompt', () => {
     }
     const p = buildUserPrompt(note, context)
     expect(p).toContain('awantura na bramce 23:10')
-    expect(p).toContain('23:12')
+    expect(p).toContain('Note written at 23:12')
     expect(p).toContain(JSON.stringify(context))
   })
 })
