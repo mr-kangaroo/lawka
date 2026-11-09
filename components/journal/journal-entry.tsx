@@ -1,6 +1,7 @@
 'use client'
 
 import { LoaderCircleIcon } from 'lucide-react'
+import { cn } from 'cn'
 import { useState, type KeyboardEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { formatHHMM } from '@/lib/report/time'
@@ -48,7 +49,9 @@ export type EntryProps = {
 }
 
 /** Small action buttons under a note being edited; 44 px hit area on phones. */
-const EDIT_BUTTON = 'relative h-7 px-2.5 text-[13px] max-sm:before:absolute max-sm:before:inset-x-0 max-sm:before:-inset-y-2'
+const EDIT_BUTTON = 'relative h-6 px-2.5 text-[13px] max-sm:before:absolute max-sm:before:inset-x-0 max-sm:before:-inset-y-2.5'
+/** The note text has the same box when read and when edited, so entering edit mode moves nothing. */
+const TEXT_BOX = '-mx-2 -my-1 rounded-md border px-2 py-1 break-words whitespace-pre-wrap'
 
 /**
  * One journal note: time column, text, attachment chips and the status line (spec §4.2).
@@ -60,7 +63,6 @@ export function JournalEntry({ note, routeLabels }: EntryProps) {
   const [draft, setDraft] = useState<string | null>(null)
   const editing = draft !== null
   const canEdit = !sent && note.status !== 'pending'
-  const hasMeta = note.attachments.length > 0 || note.status !== 'processed' || routeLabels.length > 0
 
   const save = () => {
     if (draft === null) return
@@ -90,42 +92,45 @@ export function JournalEntry({ note, routeLabels }: EntryProps) {
         {editing ? (
           <textarea
             aria-label="Edytuj notatkę"
+            rows={1}
             value={draft}
             autoFocus
             onFocus={(e) => e.currentTarget.setSelectionRange(e.currentTarget.value.length, e.currentTarget.value.length)}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={onKeyDown}
-            className="-mx-2 -my-1 resize-none rounded-md border border-input bg-muted/40 px-2 py-1 outline-none [field-sizing:content] focus:border-ring"
+            className={cn(TEXT_BOX, 'resize-none border-input bg-muted/40 outline-none [field-sizing:content] focus:border-ring')}
           />
         ) : note.text && canEdit ? (
           <button
             type="button"
             aria-label={`Edytuj notatkę: ${note.text}`}
             onClick={() => setDraft(note.text)}
-            className="-mx-2 -my-1 rounded-md px-2 py-1 text-left break-words whitespace-pre-wrap outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50"
+            className={cn(TEXT_BOX, 'border-transparent text-left outline-none hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50')}
           >
             {note.text}
           </button>
         ) : (
-          note.text && <p className="break-words whitespace-pre-wrap">{note.text}</p>
+          note.text && <p className={cn(TEXT_BOX, 'border-transparent')}>{note.text}</p>
         )}
-        {editing ? (
-          <div className="flex gap-2">
-            <Button size="sm" variant="ghost" onClick={() => setDraft(null)} className={EDIT_BUTTON}>
-              Anuluj
-            </Button>
-            <Button size="sm" onClick={save} className={EDIT_BUTTON}>
-              Zapisz
-            </Button>
-          </div>
-        ) : hasMeta && (
-          <div className="flex flex-wrap items-center gap-2.5">
+        {/* The status line and the edit buttons share one cell, so its height never changes between them. */}
+        <div className="grid [&>*]:col-start-1 [&>*]:row-start-1">
+          <div aria-hidden={editing || undefined} className={cn('flex min-h-6 flex-wrap items-center gap-2.5', editing && 'invisible')}>
             {note.attachments.map((a) => (
               <AttachmentChip key={a.id} attachment={a} />
             ))}
             <EntryStatus note={note} routeLabels={routeLabels} />
           </div>
-        )}
+          {editing && (
+            <div className="flex items-start gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setDraft(null)} className={EDIT_BUTTON}>
+                Anuluj
+              </Button>
+              <Button size="sm" onClick={save} className={EDIT_BUTTON}>
+                Zapisz
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </li>
   )
