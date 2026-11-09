@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from 'cn'
+import { CheckIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { EMPTY_SECTION_PROMPTS, FIXED_SECTIONS, SECTION_LABELS } from '@/lib/report/catalog'
@@ -91,8 +92,9 @@ export function SectionBlock({ sectionKey, readOnly, autoFocus, className }: Sec
             variant="ghost"
             size="sm"
             onClick={() => confirmNoRemarks(sectionKey)}
-            className="relative h-7 rounded-md border-dashed border-foreground/25 px-2.5 text-[13px] font-normal text-muted-foreground max-sm:before:absolute max-sm:before:inset-x-0 max-sm:before:-inset-y-2"
+            className="relative h-7 gap-1.5 rounded-md border-dashed border-foreground/25 px-2.5 text-[13px] font-normal text-muted-foreground max-sm:before:absolute max-sm:before:inset-x-0 max-sm:before:-inset-y-2"
           >
+            <CheckIcon aria-hidden className="size-3.5" />
             Bez uwag
           </Button>
         )}

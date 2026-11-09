@@ -115,13 +115,13 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
   - `pending`: "porządkuję…" (organising) with a spinner.
   - `processed`: the routing tag.
   - `failed`: "Nie udało się uporządkować · [Ponów]" (couldn't organise · retry).
-- **No timestamp for notes written in the Raport tab** (corrections and gap-chip answers): their time column stays empty.
+- **Only notes written in the journal are shown in it.** Notes written in the Raport tab (corrections and gap-chip answers) update the report only; a toast tracks them: "Uwzględniam w raporcie…" → "Raport zaktualizowany", or "Nie udało się uwzględnić notatki" with [Ponów].
 - **Editing a note:** clicking its text edits it in place, and "Anuluj / Zapisz" (cancel / save) replace the status line (Enter saves, Esc cancels). Not while the note is being organised or after sending. Saving files the note again: the AI text written from that note alone is replaced (manager-written text never is), the incidents it was filed to are updated rather than duplicated, and the report changes only when the AI succeeds; otherwise the note shows "Nie udało się uporządkować · Ponów".
 - **Input:**
   - Placeholder in Dziennik: "Co się dzieje? Pisz jak na czacie — np. „23:10 awantura na bramce"" (what's happening? write as in a chat, e.g. "23:10 row at the door").
   - Placeholder in Raport: "Dopisz coś albo popraw — np. „incydent 2 był o 01:05"" (add something or correct it, e.g. "incident 2 was at 01:05").
   - Enter sends, Shift+Enter adds a new line. 📎 adds a fake file chip. 🎤 dictates (stretch, D16).
-  - Notes sent from the Raport tab show a toast ("Dodano do dziennika", added to the journal) instead of switching tabs. Toasts appear in the bottom-right corner, above the input.
+  - Notes sent from the Raport tab show the progress toast above instead of switching tabs. Toasts appear in the bottom-right corner, above the input.
 
 ### 4.3 Report: fixed header (Notion-style properties)
 - **Title:** "Raport ze zmiany", large and not editable.
@@ -148,7 +148,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
     - Odmowa wejścia (refused entry)
     - Interwencja policji (police intervention)
     - Inne (other)
-  - **Time:** opens a **time picker popover** (HH:MM in 5-minute steps, plus typing an exact time). An approximate time is shown in amber, with an amber underline, as **"? 01:00"**: a bold question mark before the time marks it as an estimate.
+  - **Time:** with no hour in the note ("chwilę temu", nothing) the time is empty and reads "00:00" at 60% opacity, in amber as a required gap; an estimate exists only when the note names an hour ("po 1" → ? 01:30). It opens a **time picker popover** (HH:MM in 5-minute steps, plus typing an exact time). An approximate time is shown in amber, with an amber underline, as **"? 01:00"**: a bold question mark before the time marks it as an estimate.
     - **Estimated time (`? 01:00`):** hovering or focusing shows a **tooltip** with the AI's explanation, quoting the manager's own words: *"W notatce: „koło 1". Sprecyzuj, jaka była dokładna godzina zdarzenia."* ("The note says 'around 1'. Specify the exact time of the event.") Clicking opens the time picker. There is **no separate inline panel or chip** for this.
     - The tooltip uses impersonal phrasing because a Polish second-person past tense is gendered ("Napisałeś/Napisałaś").
   - **Place:** opens a popover listing the venue's areas, plus "Inne…" (other) for free text:
@@ -178,7 +178,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
   3. **Publiczność i bezpieczeństwo** (audience and safety): crowd size, queues, crowding, safety concerns.
   4. **Ochrona** (security)
   5. **Usterki i sprzęt** (faults and equipment)
-- **An empty fixed section** (3–5) shows a muted prompt ("Co z ochroną? Napisz w notatce albo potwierdź.", what about security? write a note or confirm) and a dashed **[Bez uwag]** button on the right of the section heading. Until it's filled or confirmed, it's an **optional** gap (not counted). Clicking writes "Bez uwag." as a manager-authored line.
+- **An empty fixed section** (3–5) shows a muted prompt ("Co z ochroną? Napisz w notatce albo potwierdź.", what about security? write a note or confirm) and a dashed **[✓ Bez uwag]** button on the right of the section heading. Until it's filled or confirmed, it's an **optional** gap (not counted). Clicking writes "Bez uwag." as a manager-authored line.
 - **Conditional sections** (in the brief's order, after the fixed ones): Ocena bramkarzy (door staff rating), Artyści i ekipa (artists and crew), Produkcja / przebieg / otwarcie drzwi (production, running order, door opening), Bar, Kuchnia (kitchen), Dostawcy zewnętrzni (external suppliers), Imprezy prywatne (private events), Stany magazynowe (stock).
   - They appear when the AI files content there, or when the manager adds one from the hints below.
   - Ocena bramkarzy stays separate from Ochrona, as in the brief.

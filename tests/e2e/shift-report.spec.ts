@@ -44,6 +44,7 @@ test('full shift flow: journal, possible incident, report, undo, send', async ({
   await page.getByRole('textbox', { name: 'Czy wezwano policję?' }).fill('Tak, policja przyjechała o 22:55')
   await page.getByRole('button', { name: 'Zapisz' }).click()
   await expect(page.getByRole('button', { name: 'Czy wezwano policję?' })).toHaveCount(0)
+  await expect(page.getByText('Raport zaktualizowany')).toBeVisible()
 
   // Ochrona: confirm "Bez uwag".
   const security = page.getByRole('region', { name: 'Ochrona' })
@@ -70,6 +71,8 @@ test('full shift flow: journal, possible incident, report, undo, send', async ({
 
   // New shift: the journal starts with the centred empty state, and the first note replaces it.
   await page.getByRole('tab', { name: /Dziennik/ }).click()
+  // The gap answer was written in the Raport tab, so it is not in the journal.
+  await expect(page.getByText('Tak, policja przyjechała o 22:55')).toHaveCount(0)
   await page.getByRole('button', { name: 'Nowa zmiana' }).first().click()
   await expect(page.getByRole('heading', { name: 'Zapisuj, co dzieje się na zmianie' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Zobacz raport' }).first()).toBeVisible()

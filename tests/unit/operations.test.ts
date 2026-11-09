@@ -23,14 +23,14 @@ function incident(over: Partial<Incident> = {}): Incident {
 }
 
 describe('applyOperations', () => {
-  it('re-estimates an approximate time from its phrase ("po 1" → 01:30), whatever hhmm the model sent', () => {
+  it('re-estimates an approximate time from its phrase ("po 1" → 01:30); without an hour there is no time', () => {
     const vague = (hhmm: string, sourcePhrase?: string): Operation => ({
       ...add, op: 'addIncident', time: { hhmm, approx: true, ...(sourcePhrase ? { sourcePhrase } : {}) },
     } as Operation)
     const start = { startedAt: new Date(2026, 10, 8, 18, 30).toISOString() }
     expect(apply(shift(start), [vague('18:35', 'po 1')]).incidents[0].time?.value).toEqual({ hhmm: '01:30', approx: true, sourcePhrase: 'po 1' })
-    expect(apply(shift(start), [vague('18:35', 'chwilę temu')]).incidents[0].time?.value.hhmm).toBe('18:35')
-    expect(apply(shift(start), [vague('18:35')]).incidents[0].time?.value.hhmm).toBe('18:35')
+    expect(apply(shift(start), [vague('18:35', 'chwilę temu')]).incidents[0].time).toBeNull()
+    expect(apply(shift(start), [vague('18:35')]).incidents[0].time).toBeNull()
   })
 
   it('addIncident creates ai-owned fields and copies note attachments', () => {
@@ -64,10 +64,10 @@ describe('applyOperations', () => {
     const s = shift({
       incidents: [incident({ location: { value: 'Bar główny', prov: mgr }, type: { value: 'Stary', prov: { ...mgr, by: 'ai' } } })],
     })
-    const out = apply(s, [{ op: 'updateIncident', incidentId: 'i1', location: 'Szatnia', type: 'Nowy', time: { hhmm: '01:25', approx: true } }])
+    const out = apply(s, [{ op: 'updateIncident', incidentId: 'i1', location: 'Szatnia', type: 'Nowy', time: { hhmm: '23:25', approx: true, sourcePhrase: 'około 23:25' } }])
     expect(out.incidents[0].location?.value).toBe('Bar główny')
     expect(out.incidents[0].type?.value).toBe('Nowy')
-    expect(out.incidents[0].time?.value).toEqual({ hhmm: '01:25', approx: true })
+    expect(out.incidents[0].time?.value).toEqual({ hhmm: '23:25', approx: true, sourcePhrase: 'około 23:25' })
   })
 
   it('updateIncident fills a null field even when other fields are manager-owned', () => {
@@ -202,7 +202,7 @@ describe('applyOperations', () => {
   it('routeLabel renumbers after an earlier-timed incident is added', () => {
     const s = shift({ startedAt: new Date(2026, 10, 8, 20, 0).toISOString(), notes: [note(), note({ id: 'n2' })] })
     const ids = createIdGen('r') // one generator, so the two incidents get distinct ids
-    const late = applyOperations(s, [{ op: 'addIncident', type: 'Zasłabnięcie', description: 'A', time: { hhmm: '01:00', approx: true } }], 'n1', now, ids)
+    const late = applyOperations(s, [{ op: 'addIncident', type: 'Zasłabnięcie', description: 'A', time: { hhmm: '01:00', approx: true, sourcePhrase: 'koło 1' } }], 'n1', now, ids)
     const lateTarget = late.notes[0].routedTo[0]
     expect(routeLabel(late, lateTarget)).toBe('Incydent #1')
     const withEarlier = applyOperations(late, [{ op: 'addIncident', type: 'Bójka', description: 'B', time: { hhmm: '23:10', approx: false } }], 'n2', now, ids)

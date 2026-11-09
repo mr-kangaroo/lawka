@@ -81,13 +81,9 @@ export function JournalEntry({ note, routeLabels }: EntryProps) {
 
   return (
     <li className="grid grid-cols-[44px_minmax(0,1fr)] gap-3 border-b border-border/50 py-3 sm:grid-cols-[56px_minmax(0,1fr)]">
-      {note.fromReport ? (
-        <span aria-hidden />
-      ) : (
-        <time dateTime={note.createdAt} className="pt-0.5 text-[13px] text-muted-foreground tabular-nums">
-          {formatHHMM(note.createdAt)}
-        </time>
-      )}
+      <time dateTime={note.createdAt} className="pt-0.5 text-[13px] text-muted-foreground tabular-nums">
+        {formatHHMM(note.createdAt)}
+      </time>
       <div className="flex flex-col gap-1.5">
         {editing ? (
           <textarea

@@ -54,10 +54,10 @@ export function fallbackOperations(note: Note, context: AiContext): Operation[] 
   if (!match) return null
   const hhmm = firstTime(note.text)
   const vague = hhmm ? null : estimateVagueTime(note.text, context.startHHMM)
-  const time: EventTime = hhmm
+  const time: EventTime | undefined = hhmm
     ? { hhmm, approx: false }
     : vague
       ? { hhmm: vague.hhmm, approx: true, sourcePhrase: vague.phrase }
-      : { hhmm: context.noteHHMM, approx: true }
-  return [{ op: 'addIncident', type: match[1], time, description: note.text }]
+      : undefined
+  return [{ op: 'addIncident', type: match[1], ...(time ? { time } : {}), description: note.text }]
 }

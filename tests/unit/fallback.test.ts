@@ -49,16 +49,10 @@ describe('fallbackOperations', () => {
     ])
   })
 
-  it('fallback uses context.noteHHMM (never the server clock) with approx: true when there is no time token', () => {
-    // createdAt says 23:20 local; the client-computed noteHHMM wins.
+  it('fallback leaves the time empty when the note names no hour (never the note or server time)', () => {
     const ops = fallbackOperations(note('Ktoś zasłabł na parkiecie, wezwana karetka'), context({ noteHHMM: '00:47' }))
     expect(ops).toEqual([
-      {
-        op: 'addIncident',
-        type: 'Zasłabnięcie / pomoc medyczna',
-        time: { hhmm: '00:47', approx: true },
-        description: 'Ktoś zasłabł na parkiecie, wezwana karetka',
-      },
+      { op: 'addIncident', type: 'Zasłabnięcie / pomoc medyczna', description: 'Ktoś zasłabł na parkiecie, wezwana karetka' },
     ])
   })
 
@@ -114,14 +108,11 @@ describe('fallbackOperations', () => {
     }
   })
 
-  it('"awantura, 300 zł szkody" uses noteHHMM with approx', () => {
+  it('"awantura, 300 zł szkody" has no time: bare numbers are never read as times', () => {
     expect(fallbackOperations(note('awantura, 300 zł szkody'), context({ noteHHMM: '01:12' }))).toEqual([
-      { op: 'addIncident', type: 'Bójka', time: { hhmm: '01:12', approx: true }, description: 'awantura, 300 zł szkody' },
+      { op: 'addIncident', type: 'Bójka', description: 'awantura, 300 zł szkody' },
     ])
-    // Bare numbers like "12 osób" or "2026" are never read as times.
-    expect(fallbackOperations(note('awantura 12 osób, rok 2026'), context({ noteHHMM: '01:12' }))?.[0]).toMatchObject({
-      time: { hhmm: '01:12', approx: true },
-    })
+    expect(fallbackOperations(note('awantura 12 osób, rok 2026'), context({ noteHHMM: '01:12' }))?.[0]).not.toHaveProperty('time')
   })
 
   it('unrelated text returns null', () => {

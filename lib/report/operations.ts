@@ -151,11 +151,14 @@ export function applyOperations(
   const setField = <T>(current: Field<T> | null, value: T): Field<T> | undefined =>
     current === null || current.prov.by !== 'manager' ? aiField(value) : undefined
   const startHHMM = formatHHMM(s.startedAt)
-  /** An estimated time follows its phrase ("po 1" → 01:30), whatever the model put in hhmm. */
-  const estimated = (t: EventTime): EventTime => {
-    if (!t.approx || !t.sourcePhrase) return { ...t }
-    const e = estimateVagueTime(t.sourcePhrase, startHHMM)
-    return e ? { ...t, hhmm: e.hhmm } : { ...t }
+  /**
+   * An estimated time follows its phrase ("po 1" → 01:30), whatever the model put in hhmm. A guess
+   * without an hour in the note ("chwilę temu", or nothing) is no time at all: the field stays empty.
+   */
+  const estimated = (t: EventTime): EventTime | null => {
+    if (!t.approx) return { ...t }
+    const e = t.sourcePhrase ? estimateVagueTime(t.sourcePhrase, startHHMM) : null
+    return e ? { ...t, hhmm: e.hhmm } : null
   }
   /** Blank or whitespace-only text counts as absent (D7: it must not satisfy the legal minimum). */
   const present = (text: string | undefined): string | undefined => {
@@ -173,7 +176,10 @@ export function applyOperations(
           id: newId(),
           createdAt: note?.createdAt ?? now,
           type: type ? aiField(type) : null,
-          time: op.time ? aiField<EventTime>(estimated(op.time)) : null,
+          time: (() => {
+            const t = op.time && estimated(op.time)
+            return t ? aiField<EventTime>(t) : null
+          })(),
           location: location ? aiField(location) : null,
           description: description ? { type: 'doc', content: paragraphsToBlocks([description], attrs()) } : null,
           attachments: [],
@@ -198,8 +204,9 @@ export function applyOperations(
           const f = setField(inc.type, type)
           if (f) { inc.type = f; changed = true }
         }
-        if (op.time !== undefined) {
-          const f = setField(inc.time, estimated(op.time))
+        const time = op.time && estimated(op.time)
+        if (time) {
+          const f = setField(inc.time, time)
           if (f) { inc.time = f; changed = true }
         }
         if (location) {

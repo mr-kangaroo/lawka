@@ -60,11 +60,11 @@ If a minimum is missing the app already asks for it automatically
 
 ## Times
 time is { hhmm: "HH:MM" (24h), approx: boolean, sourcePhrase? }.
-Use an explicit time from the note when present (approx: false). When the time is vague ("około", "przed północą",
-"chwilę temu", or no time at all) estimate it from the note's time and set approx: true and sourcePhrase to the
-vague phrase as written. Estimate from the phrase itself: "po 1" → 01:30, "koło 1" / "około 1" → 01:00,
+Use an explicit time from the note when present (approx: false). When the note names an hour vaguely, set approx: true
+and sourcePhrase to the phrase as written, and estimate from the phrase itself: "po 1" → 01:30, "koło 1" / "około 1" → 01:00,
 "przed 2" → 01:45, "przed północą" → 23:45. A bare hour means the one that comes next in the night shift
-("po 1" is 01:30, not 13:30). Never invent a precise time.
+("po 1" is 01:30, not 13:30). When the note names no hour at all ("chwilę temu", "przed chwilą", or no time),
+omit time: the manager fills it in. Never use the note's own time as the event time, and never invent a time.
 
 ## Weighting of gaps (addGap)
 required:

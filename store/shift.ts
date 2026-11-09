@@ -23,11 +23,12 @@ export type ShiftState = {
   tab: Tab
   lastRemoved?: { incident: Incident; index: number }
 
+  /** Adds a note and files it; resolves with the note's id once processed (undefined when nothing was added). */
   submitNote(
     text: string,
     attachments: Attachment[],
     opts?: { answersGapId?: string },
-  ): Promise<void>
+  ): Promise<string | undefined>
   retryNote(noteId: string): Promise<void>
   /** Saves a new text for a note and files it again (spec §4.2). */
   editNote(noteId: string, text: string): Promise<void>
@@ -156,8 +157,8 @@ export const useShift = create<ShiftState>()(
 
         async submitNote(text, attachments, opts) {
           const trimmed = text.trim()
-          if (!trimmed && attachments.length === 0) return
-          if (get().shift.sentAt) return
+          if (!trimmed && attachments.length === 0) return undefined
+          if (get().shift.sentAt) return undefined
           const id = newId()
           edit((s) => {
             s.notes.push({
@@ -179,6 +180,7 @@ export const useShift = create<ShiftState>()(
             }
           })
           await processNote(id)
+          return id
         },
 
         async retryNote(noteId) {

@@ -19,6 +19,8 @@ export type InlineFieldProps = {
   /** The shown value; `null` shows the amber `placeholder`. */
   value: ReactNode | null
   placeholder: string
+  /** Shows the placeholder like a dimmed value ("00:00" at 60%) instead of a word. */
+  placeholderAsValue?: boolean
   /** Amber even with a value (an estimated time). */
   required?: boolean
   bold?: boolean
@@ -40,6 +42,7 @@ export function InlineField({
   label,
   value,
   placeholder,
+  placeholderAsValue,
   required,
   bold,
   tooltip,
@@ -80,7 +83,7 @@ export function InlineField({
         aria-label={label}
         className={cn(VALUE, TONE[amber ? 'required' : 'default'], bold && 'font-semibold')}
       >
-        {value ?? placeholder}
+        {value ?? (placeholderAsValue ? <span className="opacity-60">{placeholder}</span> : placeholder)}
       </button>
     </PopoverTrigger>
   )

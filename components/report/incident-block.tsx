@@ -144,7 +144,8 @@ export function IncidentBlock({
               time.hhmm
             ))
           }
-          placeholder="godzina"
+          placeholder="00:00"
+          placeholderAsValue
           required={time?.approx}
           tooltip={readOnly && time?.approx ? undefined : timeTooltip}
           readOnly={readOnly}

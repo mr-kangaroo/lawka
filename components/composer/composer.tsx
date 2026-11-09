@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { Attachment } from '@/lib/report/types'
 import { useShift } from '@/store/shift'
+import { submitFromReport } from '@/components/report/report-note'
 import { useSpeech } from './use-speech'
 import { pickFakeAttachment } from './fake-attach'
 import { FiledConfirmation } from './filed-confirmation'
@@ -57,10 +58,10 @@ export function Composer({ placeholder, compactPlaceholder }: ComposerProps) {
   function submit() {
     if (!canSubmit) return
     speech.cancel()
-    void submitNote(text, attachments)
+    if (tab === 'report') submitFromReport(text, attachments)
+    else void submitNote(text, attachments)
     setText('')
     setAttachments([])
-    if (tab === 'report') toast('Dodano do dziennika')
   }
 
   function onSubmit(e: FormEvent) {
