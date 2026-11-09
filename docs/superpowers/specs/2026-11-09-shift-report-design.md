@@ -219,12 +219,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
    - "Nowa zmiana" (new shift) resets the app to an empty shift.
 
 ### 4.8 Demo
-On first load the app starts with the shift begun at 20:00 and these notes **already processed** from stored operations (no AI call, so the first impression is instant):
-- 21:15
-- 22:41 with a photo chip
-- 00:30
-- 01:30
-- 01:48, with an open AI question
+On first load the app starts with the shift begun at 20:00 and seven notes **already processed** from stored operations (no AI call, so the first impression is instant): 21:15, 22:41 (with a photo chip), 22:52, 00:30, 01:30, 01:48 (with an open AI question) and 02:52. Every fact in the demo report traces back to a demo note: the demo never shows the "AI" inventing anything.
 
 A small "Demo" menu offers "Załaduj ponownie" (reload the demo) and "Pusta zmiana" (empty shift). New notes go to the live AI.
 
