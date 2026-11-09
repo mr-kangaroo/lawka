@@ -89,8 +89,8 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 ├────────────── Notatki ──────────────┬──────────────────────── Raport ──────────────────────────────────┤
 │ 21:15 note text                     │ [B] [I] [•≡]                         ● wymagane  ◌ warto dodać     │
 │       ✦ Publiczność · Imprezy pryw. │                                                                    │
-│ 22:41 note text  [IMG_2231.jpg]     │ Raport ze zmiany                            [📅 pt, 8 lis 2026 → 9 lis ▾] │
-│       ✦ Incydent #1                 │ Autor  [(KN) Kasia Nowak ▾]                                         │
+│ 22:41 note text  [IMG_2231.jpg]     │ Raport ze zmiany                                                   │
+│       ✦ Incydent #1                 │ 📅 Data zmiany   pt, 8 lis 2026 → sob, 9 lis  ·  👤 Autor  (KN) Kasia Nowak │
 │ 01:48 unclear note                  │                                                                    │
 │   ┌ ✦ AI question                ┐  │ Podsumowanie                                                        │
 │   │ [Tak, zapisz jako incydent]  │  │ Pełna sala, kolejka do 22:30…                                       │
@@ -116,14 +116,15 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 - **AI question:** a bordered block under its note with the question, 0–3 quick replies and a free-text reply field. Answering creates a new note linked to the question (`replyTo`), which is processed like any other note. The question then collapses to show the answer.
 - **Composer:** Enter sends, Shift+Enter adds a new line. 📎 adds a fake file chip (a simulated picker shows a name and type, and images get a placeholder thumbnail).
 
-### 4.3 Report: fixed header
-- **Title:** "Raport ze zmiany", not editable.
-- **Date picker** (to the right of the title): the shift's **start date**, shown as "pt, 8 lis 2026 → 9 lis" because shifts cross midnight. It uses a shadcn Popover with a Calendar and defaults to today, or yesterday when opened before 06:00.
-- **Autor (author):** a dropdown with avatar (initials) and name plus role. Mock people:
-  - Kasia Nowak, Kierowniczka zmiany (shift manager), the default
-  - Tomek Wiśniewski, Kierownik zmiany (shift manager)
-  - Ola Zielińska, Kierowniczka baru (bar manager)
-  - Marek Dąbrowski, Szef ochrony (head of security)
+### 4.3 Report: fixed header (Notion-style properties)
+- **Title:** "Raport ze zmiany", large and not editable.
+- Below it is a **properties block in the style of Notion**. Each row has an icon and a muted label in a fixed-width left column, and the value on the right as a borderless control that highlights on hover. A thin divider separates the block from the report body.
+  - **Data zmiany** (shift date, calendar icon): the shift's **start date**, shown as "pt, 8 lis 2026 → sob, 9 lis" because shifts cross midnight. It uses a shadcn Popover with a Calendar and defaults to today, or yesterday when opened before 06:00.
+  - **Autor** (author, person icon): avatar (initials) and name. It opens a list with avatar, name and role. Mock people:
+    - Kasia Nowak, Kierowniczka zmiany (shift manager), the default
+    - Tomek Wiśniewski, Kierownik zmiany (shift manager)
+    - Ola Zielińska, Kierowniczka baru (bar manager)
+    - Marek Dąbrowski, Szef ochrony (head of security)
 
 ### 4.4 Report: incidents
 - Shown under **Incydenty** as bordered blocks, in time order. The display number (#1, #2, …) follows the order on screen.
