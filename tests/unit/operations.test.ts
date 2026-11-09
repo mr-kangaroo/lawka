@@ -23,6 +23,16 @@ function incident(over: Partial<Incident> = {}): Incident {
 }
 
 describe('applyOperations', () => {
+  it('re-estimates an approximate time from its phrase ("po 1" → 01:30), whatever hhmm the model sent', () => {
+    const vague = (hhmm: string, sourcePhrase?: string): Operation => ({
+      ...add, op: 'addIncident', time: { hhmm, approx: true, ...(sourcePhrase ? { sourcePhrase } : {}) },
+    } as Operation)
+    const start = { startedAt: new Date(2026, 10, 8, 18, 30).toISOString() }
+    expect(apply(shift(start), [vague('18:35', 'po 1')]).incidents[0].time?.value).toEqual({ hhmm: '01:30', approx: true, sourcePhrase: 'po 1' })
+    expect(apply(shift(start), [vague('18:35', 'chwilę temu')]).incidents[0].time?.value.hhmm).toBe('18:35')
+    expect(apply(shift(start), [vague('18:35')]).incidents[0].time?.value.hhmm).toBe('18:35')
+  })
+
   it('addIncident creates ai-owned fields and copies note attachments', () => {
     const att = { id: 'a1', name: 'foto.jpg', kind: 'image' as const }
     const out = apply(shift({ notes: [note({ attachments: [att] })] }), [add])

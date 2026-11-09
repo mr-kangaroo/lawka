@@ -1,7 +1,7 @@
 import type { AiContext } from '@/lib/ai/client'
 import type { Operation } from '@/lib/report/operations'
 import { normalizeForSearch } from '@/lib/report/search'
-import { parseHHMM } from '@/lib/report/time'
+import { estimateVagueTime, parseHHMM } from '@/lib/report/time'
 import type { EventTime, Note } from '@/lib/report/types'
 
 /** Keyword heuristics on normalized text (lowercase, no diacritics), checked in order (spec §6.4). */
@@ -61,6 +61,11 @@ export function fallbackOperations(note: Note, context: AiContext): Operation[] 
   const match = KEYWORD_TYPES.find(([re]) => re.test(normalized))
   if (!match) return null
   const hhmm = firstTime(note.text)
-  const time: EventTime = hhmm ? { hhmm, approx: false } : { hhmm: context.noteHHMM, approx: true }
+  const vague = hhmm ? null : estimateVagueTime(note.text, context.startHHMM)
+  const time: EventTime = hhmm
+    ? { hhmm, approx: false }
+    : vague
+      ? { hhmm: vague.hhmm, approx: true, sourcePhrase: vague.phrase }
+      : { hhmm: context.noteHHMM, approx: true }
   return [{ op: 'addIncident', type: match[1], time, description: note.text }]
 }

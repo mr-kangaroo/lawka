@@ -44,3 +44,53 @@ export function timeSlots(startHHMM: string): string[] {
     return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
   })
 }
+
+const fmt = (minutes: number) => {
+  const m = ((minutes % DAY_MINUTES) + DAY_MINUTES) % DAY_MINUTES
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+}
+
+/** Of `h` and `h + 12`, the hour that comes first after the shift start ("po 1" in a 20:00 shift is 01:xx). */
+function nearestHour(h: number, startHHMM: string): number {
+  if (h > 12) return h
+  const am = h % 12
+  return minutesFromShiftStart(fmt(am * 60), startHHMM) <= minutesFromShiftStart(fmt((am + 12) * 60), startHHMM)
+    ? am
+    : am + 12
+}
+
+/** Vague Polish time phrases, matched on lowercase text without diacritics. Order matters. */
+const VAGUE: Array<{ re: RegExp; at: (h: number, m: number | null) => number }> = [
+  { re: /\bpo (\d{1,2})(?:[:.](\d{2}))?(?!\d)/, at: (h, m) => h * 60 + (m === null ? 30 : m + 15) },
+  { re: /\bprzed (\d{1,2})(?:[:.](\d{2}))?(?!\d)/, at: (h, m) => h * 60 + (m ?? 0) - 15 },
+  { re: /\b(?:okolo|kolo|ok\.?|gdzies o|mniej wiecej o) (\d{1,2})(?:[:.](\d{2}))?(?!\d)/, at: (h, m) => h * 60 + (m ?? 0) },
+]
+const MIDNIGHT: Array<[RegExp, number]> = [
+  [/\bprzed polnoca\b/, -15],
+  [/\bpo polnocy\b/, 30],
+  [/\b(?:o|kolo|okolo) polnocy\b/, 0],
+]
+
+/**
+ * Estimates the time a vague phrase means: "po 1" → 01:30, "koło 1" → 01:00, "przed 2" → 01:45,
+ * "przed północą" → 23:45. A bare hour is read as the one that comes first after the shift start.
+ * Returns the matched phrase (as written) and the estimate, or null when there is no such phrase.
+ */
+export function estimateVagueTime(text: string, startHHMM: string): { phrase: string; hhmm: string } | null {
+  const norm = text.toLowerCase().replace(/ł/g, 'l').normalize('NFD').replace(/\p{Diacritic}/gu, '')
+  // Normalization keeps one character per character, so match offsets map back onto `text`.
+  const phraseAt = (m: RegExpExecArray) => text.slice(m.index, m.index + m[0].length)
+  for (const [re, offset] of MIDNIGHT) {
+    const m = re.exec(norm)
+    if (m) return { phrase: phraseAt(m), hhmm: fmt(offset) }
+  }
+  for (const { re, at } of VAGUE) {
+    const m = re.exec(norm)
+    if (!m) continue
+    const h = Number(m[1])
+    const min = m[2] === undefined ? null : Number(m[2])
+    if (h > 23 || (min !== null && min > 59)) continue
+    return { phrase: phraseAt(m), hhmm: fmt(at(nearestHour(h, startHHMM), min)) }
+  }
+  return null
+}

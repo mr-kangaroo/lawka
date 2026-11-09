@@ -9,7 +9,7 @@ import {
   paragraphsToBlocks,
   replaceAiBlocks,
 } from './rich'
-import { formatHHMM, minutesFromShiftStart } from './time'
+import { estimateVagueTime, formatHHMM, minutesFromShiftStart } from './time'
 import type {
   Attachment,
   BlockAttrs,
@@ -145,6 +145,13 @@ export function applyOperations(
   }
   const setField = <T>(current: Field<T> | null, value: T): Field<T> | undefined =>
     current === null || current.prov.by !== 'manager' ? aiField(value) : undefined
+  const startHHMM = formatHHMM(s.startedAt)
+  /** An estimated time follows its phrase ("po 1" → 01:30), whatever the model put in hhmm. */
+  const estimated = (t: EventTime): EventTime => {
+    if (!t.approx || !t.sourcePhrase) return { ...t }
+    const e = estimateVagueTime(t.sourcePhrase, startHHMM)
+    return e ? { ...t, hhmm: e.hhmm } : { ...t }
+  }
   /** Blank or whitespace-only text counts as absent (D7: it must not satisfy the legal minimum). */
   const present = (text: string | undefined): string | undefined => {
     const t = text?.trim()
@@ -161,7 +168,7 @@ export function applyOperations(
           id: newId(),
           createdAt: note?.createdAt ?? now,
           type: type ? aiField(type) : null,
-          time: op.time ? aiField<EventTime>({ ...op.time }) : null,
+          time: op.time ? aiField<EventTime>(estimated(op.time)) : null,
           location: location ? aiField(location) : null,
           description: description ? { type: 'doc', content: paragraphsToBlocks([description], attrs()) } : null,
           attachments: [],
@@ -186,7 +193,7 @@ export function applyOperations(
           if (f) { inc.type = f; changed = true }
         }
         if (op.time !== undefined) {
-          const f = setField(inc.time, { ...op.time } as EventTime)
+          const f = setField(inc.time, estimated(op.time))
           if (f) { inc.time = f; changed = true }
         }
         if (location) {
