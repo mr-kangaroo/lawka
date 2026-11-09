@@ -1,4 +1,5 @@
 import { combineTransactionSteps, Extension, getChangedRanges } from '@tiptap/core'
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 
 /** Block types that carry authorship attrs at the top level of the doc. */
@@ -18,14 +19,20 @@ const OWN_META = 'blockAuthorship'
 const RESTAMP_MS = 60_000
 const pluginKey = new PluginKey(OWN_META)
 
+type Range = { from: number; to: number }
+
+/** Does the changed range touch the block at [start, end)? An empty range must fall inside it. */
+const overlaps = ({ from, to }: Range, start: number, end: number) =>
+  from === to ? from > start && from < end : from < end && to > start
+
 /**
  * Tracks who wrote each top-level block (spec §5, D9: stored, never shown).
  *
  * - Adds `by`, `at` and `sourceNoteIds` attrs to `paragraph` and `bulletList`. They're never
  *   rendered to the DOM. Paragraphs nested in list items get them too (a schema-level
  *   limitation of global attrs), but only top-level blocks are ever stamped or exported.
- * - Any doc-changing transaction from the user stamps the top-level blocks it touched with
- *   `by: 'manager', at: now` (a block already stamped within the last minute is left as is,
+ * - Any doc-changing transaction from the user stamps the top-level blocks whose content it
+ *   changed with `by: 'manager', at: now` (a block already stamped within the last minute is left as is,
  *   see `RESTAMP_MS`). Transactions with meta `external: true` are left alone.
  */
 export const BlockAuthorship = Extension.create({
@@ -55,16 +62,21 @@ export const BlockAuthorship = Extension.create({
           const changes = getChangedRanges(combineTransactionSteps(oldState.doc, [...transactions]))
           if (!changes.length) return null
 
+          // Blocks the change ranges touched before the transaction. A touched block whose
+          // content equals one of them wasn't edited, only split off or moved next to (Enter
+          // at the start or end of a paragraph), and keeps its authorship.
+          const before: ProseMirrorNode[] = []
+          oldState.doc.forEach((node, start) => {
+            if (changes.some((c) => overlaps(c.oldRange, start, start + node.nodeSize))) before.push(node)
+          })
+
           const now = Date.now()
           const at = new Date(now).toISOString()
           const tr = newState.tr
           newState.doc.forEach((node, start) => {
             if (!(AUTHORED_BLOCKS as readonly string[]).includes(node.type.name)) return
-            const end = start + node.nodeSize
-            const touched = changes.some(({ newRange: { from, to } }) =>
-              from === to ? from > start && from < end : from < end && to > start,
-            )
-            if (!touched) return
+            if (!changes.some((c) => overlaps(c.newRange, start, start + node.nodeSize))) return
+            if (before.some((old) => old.type === node.type && old.content.eq(node.content))) return
             const stampedAt = typeof node.attrs.at === 'string' ? Date.parse(node.attrs.at) : NaN
             const fresh = node.attrs.by === 'manager' && now - stampedAt < RESTAMP_MS
             if (fresh) return

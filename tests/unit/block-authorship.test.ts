@@ -118,4 +118,27 @@ describe('BlockAuthorship', () => {
     e.chain().setTextSelection(endOfBlock(e, 0)).insertContent(' Dopisek.').run()
     expect(Date.parse(e.getJSON().content![0].attrs?.at)).toBeGreaterThan(Date.parse(old))
   })
+
+  it('Enter at the end of an AI paragraph leaves it AI-authored', () => {
+    const e = makeEditor({ type: 'doc', content: [ai('Pierwszy.'), ai('Drugi.', ['n2'])] })
+    e.chain().setTextSelection(endOfBlock(e, 0)).splitBlock().run()
+
+    const blocks = e.getJSON().content!
+    expect(blocks).toHaveLength(3)
+    expect(blocks[0].attrs).toEqual({ by: 'ai', at: AI_AT, sourceNoteIds: ['n1'] })
+    expect(blocks[1].attrs?.by).toBe('manager')
+    expect(blocks[2].attrs).toEqual({ by: 'ai', at: AI_AT, sourceNoteIds: ['n2'] })
+  })
+
+  it('Enter at the start of an AI paragraph leaves it AI-authored', () => {
+    const e = makeEditor({ type: 'doc', content: [ai('Pierwszy.'), ai('Drugi.', ['n2'])] })
+    const startOfSecond = e.state.doc.child(0).nodeSize + 1
+    e.chain().setTextSelection(startOfSecond).splitBlock().run()
+
+    const blocks = e.getJSON().content!
+    expect(blocks).toHaveLength(3)
+    expect(blocks[0].attrs).toEqual({ by: 'ai', at: AI_AT, sourceNoteIds: ['n1'] })
+    expect(blocks[1].attrs?.by).toBe('manager')
+    expect(blocks[2].attrs).toEqual({ by: 'ai', at: AI_AT, sourceNoteIds: ['n2'] })
+  })
 })
