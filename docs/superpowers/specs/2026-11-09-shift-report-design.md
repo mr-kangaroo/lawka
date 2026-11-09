@@ -60,7 +60,7 @@ The brief covers **creating one report only**. Reading, collecting, listing or e
 
 ### In scope
 - One screen, two tabs, three states (shift running, review before sending, sent/read-only).
-- **Header:** "← Wróć" (back; a placeholder with no action), "● Zmiana trwa · od 20:00" (shift in progress since 20:00), the tabs **[Dziennik zmiany | Raport ③]** (the badge is the required-gap count), and a primary button on the right: "Zamknij zmianę" (close shift) in Dziennik, "Wyślij raport" (send report) in Raport.
+- **Header:** "← Wróć" (back; a placeholder with no action), "● Zmiana trwa · od 20:00" (shift in progress since 20:00), the tabs **[Dziennik zmiany | Raport ③]** (the badge is the required-gap count), and a primary button on the right: "Zobacz raport" (see report) in Dziennik, "Wyślij raport" (send report) in Raport.
 - **Dziennik zmiany:** a centred timeline of notes with timestamps, attachment chips, routing tags, and pending/failed/waiting states.
 - **One input** at the bottom of both tabs: text, fake attachments (chips and placeholder thumbnails), 🎤 (stretch), "Dodaj ↵". Above it, the AI question card when there is one.
 - **Raport:** a centred document:
@@ -88,7 +88,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 ### 4.1 Layout
 
 ```
-┌ ← Wróć  ● Zmiana trwa · od 20:00     [ Dziennik zmiany | Raport ③ ]          [Zamknij zmianę] ┐
+┌ ← Wróć  ● Zmiana trwa · od 20:00     [ Dziennik zmiany | Raport ③ ]           [Zobacz raport] ┐
 │                                                                                                │
 │                      centred column (journal ~720px / report ~760px)                           │
 │   Dziennik: 21:15 note … → Publiczność i bezpieczeństwo · Imprezy prywatne                     │
@@ -103,11 +103,13 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 ```
 
 - **Default tab:** Dziennik while the shift is running. The Raport tab is available at any time, because the brief says not to force a choice.
-- **"Zamknij zmianę"** (Dziennik tab) switches to the Raport tab. **"Wyślij raport"** (Raport tab) opens the review (§4.7).
+- **"Zobacz raport"** (Dziennik tab) switches to the Raport tab. **"Wyślij raport"** (Raport tab) opens the review (§4.7).
 - **Tab badge:** the number of required gaps, in amber. There's no other count in the header.
-- **Phone:** the same structure. The tabs span the full width under a compact header (back icon, status). Input buttons are ≥44 px. After a note is filed, a short confirmation appears above the input ("Zapisano jako Incydent #1 · 22:40", saved as incident #1).
+- **Phone:** the same structure. The tabs span the full width under a compact header (back icon, a shorter status "● od 20:00" so the primary button fits at 360 px). Section headings are 18 px. Input buttons are ≥44 px. After a note is filed, a short confirmation appears above the input ("Zapisano jako Incydent #1 · 22:40", saved as incident #1).
 
 ### 4.2 Dziennik zmiany (journal) and the input
+- **No date/author line** above the entries; those live in the report's properties.
+- **Empty journal** (new shift): a centred empty state: "Zapisuj, co dzieje się na zmianie" (log what happens on the shift) and "Pisz krótko, jak na czacie: godzina, co się stało i gdzie. AI na bieżąco ułoży z tego raport, a gdy czegoś zabraknie, dopyta." (write briefly, as in a chat: the time, what happened and where; the AI builds the report as you go and asks when something is missing).
 - **Each entry** shows its recorded time (HH:MM) in a left column, the text, and attachment chips.
 - **Routing tag** under processed entries: a muted "→ Incydent #1" or "→ Publiczność i bezpieczeństwo · Imprezy prywatne". This is the only place where AI work is labelled. It shows where a note went, not who wrote what.
 - **Entry states:**
@@ -210,8 +212,8 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 
 ### 4.7 Sending the report
 1. **"Wyślij raport" opens a review dialog.**
-   - With no required gaps: "Raport kompletny. Wysłać?" (report complete, send?) → [Wyślij].
-   - Otherwise it lists the required gaps (each one jumps to its place) with [Uzupełnij] (fill in, the default) and [Wyślij mimo to] (send anyway).
+   - With no required gaps: "Raport kompletny. Wysłać?" (report complete, send?), body "Wszystkie wymagane informacje są uzupełnione. Po wysłaniu raportu nie będzie można już edytować." (all required information is filled in; after sending, the report can't be edited) → [Wyślij].
+   - Otherwise, the title "Do uzupełnienia przed wysłaniem", body "Tych informacji wciąż brakuje. Jeśli wyślesz teraz, w raporcie pojawią się jako „brak danych”, a raportu nie będzie można już edytować." (this information is still missing; if you send now, it will show as "no data" and the report can't be edited), the list of required gaps (each one jumps to its place), [Uzupełnij] (fill in, the default) and [Wyślij mimo to] (send anyway).
 2. **The report becomes read-only.**
    - It shows "Wysłano 03:07" (sent at 03:07) and the status in the header becomes "Zmiana zamknięta" (shift closed).
    - Unresolved required gaps show as "brak danych" (no data).

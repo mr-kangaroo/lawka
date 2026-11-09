@@ -20,7 +20,18 @@ function ShiftStatus() {
   return (
     <span className="inline-flex items-center gap-1.5 text-[13px] whitespace-nowrap text-muted-foreground">
       <span aria-hidden className={sentAt ? 'size-1.5 rounded-full bg-muted-foreground' : 'size-1.5 rounded-full bg-emerald-400'} />
-      {sentAt ? 'Zmiana zamknięta' : `Zmiana trwa · od ${formatHHMM(startedAt)}`}
+      {/* Phones drop the "Zmiana" prefix so the primary button fits next to it. */}
+      {sentAt ? (
+        <>
+          <span className="max-sm:hidden">Zmiana zamknięta</span>
+          <span className="sm:hidden">Zamknięta</span>
+        </>
+      ) : (
+        <>
+          <span className="max-sm:hidden">Zmiana trwa · </span>
+          {`od ${formatHHMM(startedAt)}`}
+        </>
+      )}
     </span>
   )
 }
@@ -33,7 +44,7 @@ function ShiftTabs() {
   // Once sent, open gaps are "brak danych" in the report; nothing is left to fill in.
   const required = useShift((s) => (s.shift.sentAt ? 0 : requiredCount(s.shift)))
   return (
-    <TabsList aria-label="Widok zmiany" className="h-10 w-full rounded-[10px] border border-border bg-card/60 sm:w-fit">
+    <TabsList aria-label="Widok zmiany" className="w-full rounded-[10px] border border-border bg-card/60 group-data-horizontal/tabs:h-10 sm:w-fit">
       <TabsTrigger value="journal" className={TRIGGER}>
         <span className="sm:hidden">Dziennik</span>
         <span className="hidden sm:inline">Dziennik zmiany</span>
@@ -73,7 +84,7 @@ export function AppHeader({ onSend }: AppHeaderProps) {
       </Button>
     ) : tab === 'journal' ? (
       <Button onClick={() => setTab('report')} className={PRIMARY}>
-        Zamknij zmianę
+        Zobacz raport
       </Button>
     ) : (
       <Button onClick={onSend} disabled={sent} className={PRIMARY}>
@@ -83,7 +94,7 @@ export function AppHeader({ onSend }: AppHeaderProps) {
 
   return (
     <header className="border-b border-border/60 px-3 pt-3 pb-2.5 sm:grid sm:grid-cols-3 sm:items-center sm:gap-3 sm:border-border sm:px-6 sm:py-3">
-      <div className="flex items-center justify-between gap-3 sm:justify-start">
+      <div className="flex items-center justify-between gap-2 sm:justify-start sm:gap-3">
         <Button variant="ghost" aria-label="Wróć do strony głównej" className="size-11 rounded-[10px] text-foreground/90 sm:h-8 sm:w-auto sm:rounded-lg sm:pr-2.5 sm:pl-1.5 [&_svg:not([class*='size-'])]:size-[18px]">
           <ArrowLeftIcon aria-hidden />
           <span className="hidden sm:inline">Wróć</span>

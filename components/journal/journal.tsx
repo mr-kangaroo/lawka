@@ -1,21 +1,26 @@
 'use client'
 
 import { useEffect, useMemo, useRef } from 'react'
-import { format } from 'date-fns'
-import { pl } from 'date-fns/locale'
+import { NotebookPenIcon } from 'lucide-react'
 import { routeLabel } from '@/lib/report/operations'
-import { PEOPLE } from '@/lib/report/people'
 import { useShift } from '@/store/shift'
 import { isAwaitingAnswer } from './ai-question-card'
 import { JournalEntry } from './journal-entry'
 
-const WEEKDAYS = ['Nd', 'Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'So']
-
-/** "Nd, 8 listopada" from a YYYY-MM-DD shift date, read as a local date. */
-function shiftDateLabel(date: string): string {
-  const [y, m, d] = date.split('-').map(Number)
-  const local = new Date(y, m - 1, d)
-  return `${WEEKDAYS[local.getDay()]}, ${format(local, 'd MMMM', { locale: pl })}`
+/** Shown in the centre of an empty journal (a new shift). */
+function EmptyJournal() {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center px-4 py-10 text-center">
+      <span aria-hidden className="mb-4 grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
+        <NotebookPenIcon className="size-5" />
+      </span>
+      <h2 className="text-lg font-semibold text-foreground">Zapisuj, co dzieje się na zmianie</h2>
+      <p className="mt-1.5 max-w-[420px] text-sm leading-relaxed text-muted-foreground">
+        Pisz krótko, jak na czacie: godzina, co się stało i gdzie. AI na bieżąco ułoży z tego raport, a gdy
+        czegoś zabraknie, dopyta.
+      </p>
+    </div>
+  )
 }
 
 /** The Dziennik tab: the shift's notes, oldest first, scrolled to the newest. */
@@ -35,7 +40,8 @@ export function Journal() {
       ),
     [shift],
   )
-  const author = PEOPLE.find((p) => p.id === shift.authorId)
+
+  const empty = shift.notes.length === 0
 
   // A new note always scrolls to the end.
   useEffect(() => {
@@ -61,14 +67,13 @@ export function Journal() {
       observer.disconnect()
       scroller.removeEventListener('scroll', onScroll)
     }
-  }, [])
+    // Re-attach when the list first mounts (an empty journal renders no list).
+  }, [empty])
+
+  if (empty) return <EmptyJournal />
 
   return (
     <div className="mx-auto w-full max-w-[720px]">
-      <p className="mb-1 text-[13px] text-muted-foreground">
-        {shiftDateLabel(shift.date)}
-        {author && ` · ${author.name}`}
-      </p>
       <ol ref={listRef}>
         {shift.notes.map((note) => (
           <JournalEntry

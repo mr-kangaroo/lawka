@@ -133,6 +133,10 @@
   html {
     @apply font-sans;
   }
+  /* Tailwind v4 resets buttons to the default cursor; every clickable control gets a pointer. */
+  :where(button, [role="button"], [role="tab"], [role="option"], [role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], a[href], label[for], summary, select):not(:disabled, [aria-disabled="true"], [data-disabled]) {
+    cursor: pointer;
+  }
 }
 /* Tiptap placeholder (RichEditor `placeholder`): muted text in an empty editor. */
 .tiptap p.is-editor-empty:first-child::before {

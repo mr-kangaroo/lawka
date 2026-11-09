@@ -92,7 +92,7 @@ export function SectionBlock({ sectionKey, readOnly, autoFocus, className }: Sec
 
   return (
     <section id={`section-${sectionKey}`} aria-labelledby={headingId} className={cn('scroll-mt-6', className)}>
-      <h3 id={headingId} className="mb-0.5 text-[15px] font-semibold text-foreground">
+      <h3 id={headingId} className="mb-0.5 text-lg font-semibold text-foreground">
         {label}
       </h3>
       {body}

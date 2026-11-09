@@ -60,10 +60,10 @@ export function SendDialog({ open, onOpenChange }: { open: boolean; onOpenChange
       >
         <DialogHeader>
           <DialogTitle>{complete ? 'Raport kompletny. Wysłać?' : 'Do uzupełnienia przed wysłaniem'}</DialogTitle>
-          <DialogDescription className={complete ? 'sr-only' : undefined}>
+          <DialogDescription>
             {complete
-              ? 'Wszystkie wymagane pola są uzupełnione.'
-              : 'Te rzeczy będą w raporcie jako „brak danych”.'}
+              ? 'Wszystkie wymagane informacje są uzupełnione. Po wysłaniu raportu nie będzie można już edytować.'
+              : 'Tych informacji wciąż brakuje. Jeśli wyślesz teraz, w raporcie pojawią się jako „brak danych”, a raportu nie będzie można już edytować.'}
           </DialogDescription>
         </DialogHeader>
         {!complete && (
