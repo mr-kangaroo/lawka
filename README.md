@@ -25,6 +25,7 @@ Without a key the app still works: notes go through the scripted fallback.
 - **Manual edits always win:** the AI never changes text or a field the manager has touched; notes are never edited or deleted.
 - **Gaps have weight:** required (amber, counted in the badge) or optional (dashed, ignored in the count). The legal minimum for an incident (type, time, place, description) is enforced by code.
 - **Explicit reply mode:** AI questions sit in a card above the input with quick replies; typing answers one only after "Odpowiedz".
+- **Voice dictation:** a microphone button fills the input in Polish through the Web Speech API (dictation in Chrome/Safari); it never sends on its own.
 - **Free tier, no backend:** Gemini free tier through the Vercel AI SDK with a scripted fallback for 503s; state in localStorage.
 
 ## How the AI works
@@ -37,7 +38,6 @@ Each note is sent to `/api/process-note` and the model returns a list of **opera
 - PDF / insurer export
 - Rating fields (e.g. for the night overall)
 - Real file uploads instead of placeholder attachments
-- Voice dictation (not shipped yet)
 
 ## Links
 

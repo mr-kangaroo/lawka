@@ -8,16 +8,17 @@ import {
   useSyncExternalStore,
   type FormEvent,
   type KeyboardEvent,
-  type ReactNode,
 } from 'react'
-import { ArrowUpIcon, CornerDownLeftIcon, PaperclipIcon, XIcon } from 'lucide-react'
+import { ArrowUpIcon, CornerDownLeftIcon, MicIcon, PaperclipIcon, XIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { AttachmentChip } from '@/components/journal/attachment-chip'
 import { isAwaitingAnswer } from '@/components/journal/ai-question-card'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { formatHHMM } from '@/lib/report/time'
 import type { Attachment } from '@/lib/report/types'
 import { useShift } from '@/store/shift'
+import { useSpeech } from './use-speech'
 import { pickFakeAttachment } from './fake-attach'
 import { FiledConfirmation } from './filed-confirmation'
 
@@ -38,8 +39,6 @@ export type ComposerProps = {
   placeholder: string
   /** Shorter placeholder below 640 px, where the input is one line. Defaults to `placeholder`. */
   compactPlaceholder?: string
-  /** Slot for the dictation button (Task 13). Renders nothing when omitted. */
-  voiceSlot?: ReactNode
   /**
    * Reply mode: the AI question (id) the next submit answers. Set by the question card's
    * "Odpowiedz"; ignored once that question is no longer awaiting an answer.
@@ -54,10 +53,11 @@ export type ComposerProps = {
  * Enter submits, Shift+Enter adds a new line. Notes are independent unless the composer is
  * in reply mode (`replyTo`), entered explicitly from the question card.
  */
-export function Composer({ placeholder, compactPlaceholder, voiceSlot, replyTo, onReplyEnd }: ComposerProps) {
+export function Composer({ placeholder, compactPlaceholder, replyTo, onReplyEnd }: ComposerProps) {
   const id = useId()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const isPhone = useIsPhone()
+  const speech = useSpeech()
   const [text, setText] = useState('')
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const submitNote = useShift((s) => s.submitNote)
@@ -79,6 +79,7 @@ export function Composer({ placeholder, compactPlaceholder, voiceSlot, replyTo, 
 
   function submit() {
     if (!canSubmit) return
+    speech.cancel()
     void submitNote(text, attachments, replyQuestion ? { replyTo: replyQuestion.id } : undefined)
     setText('')
     setAttachments([])
@@ -144,11 +145,43 @@ export function Composer({ placeholder, compactPlaceholder, voiceSlot, replyTo, 
             value={text}
             disabled={sent}
             placeholder={isPhone && compactPlaceholder ? compactPlaceholder : placeholder}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              speech.cancel() // typing mid-dictation would be overwritten by the next result
+              setText(e.target.value)
+            }}
             onKeyDown={onKeyDown}
             className="max-h-40 min-h-11 min-w-0 flex-1 resize-none bg-transparent py-2.5 text-base leading-normal outline-none [field-sizing:content] placeholder:text-muted-foreground disabled:cursor-not-allowed sm:min-h-[54px] sm:py-1 sm:text-[15px]"
           />
-          {voiceSlot}
+          {speech.supported && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              disabled={sent}
+              aria-pressed={speech.listening}
+              aria-label={speech.listening ? 'Zatrzymaj dyktowanie' : 'Dyktuj notatkę'}
+              onClick={() => {
+                if (speech.listening) return speech.stop()
+                speech.start({
+                  base: text,
+                  onText: setText,
+                  onDenied: () => toast('Brak dostępu do mikrofonu'),
+                })
+              }}
+              className={cn(
+                'relative size-11 rounded-[10px] text-foreground/80 sm:size-9 sm:rounded-lg [&_svg:not([class*="size-"])]:size-[18px]',
+                speech.listening && 'bg-destructive/10 text-destructive hover:bg-destructive/15 hover:text-destructive',
+              )}
+            >
+              <MicIcon />
+              {speech.listening && (
+                <span
+                  aria-hidden
+                  className="absolute top-1.5 right-1.5 size-2 rounded-full bg-destructive motion-safe:animate-pulse sm:top-1 sm:right-1"
+                />
+              )}
+            </Button>
+          )}
           <Button
             type="button"
             variant="ghost"
