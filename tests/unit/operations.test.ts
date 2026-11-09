@@ -36,6 +36,16 @@ describe('applyOperations', () => {
     expect(inc.sourceNoteIds).toEqual(['n1'])
   })
 
+  it('blank or whitespace-only type, location and description are treated as absent', () => {
+    const out = apply(shift(), [{ op: 'addIncident', type: ' ', location: '', description: '  ', time: { hhmm: '01:00', approx: false } }])
+    const inc = out.incidents[0]
+    expect(inc.type).toBeNull()
+    expect(inc.location).toBeNull()
+    expect(inc.description).toBeNull()
+    const updated = apply(out, [{ op: 'updateIncident', incidentId: inc.id, type: '  ', location: '' }])
+    expect(updated.incidents[0].type).toBeNull()
+    expect(updated.incidents[0].location).toBeNull()
+  })
   it('addIncident clears noIncidentsConfirmed', () => {
     expect(apply(shift(), [add]).noIncidentsConfirmed).toBe(false)
   })

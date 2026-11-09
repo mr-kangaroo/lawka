@@ -148,6 +148,16 @@ describe('store', () => {
     expect(useShift.getState().shift.incidents[0].type!.value).toBe('Awaria')
   })
 
+  it('setIncidentField ignores blank type and location', async () => {
+    const { useShift } = await load()
+    const id = useShift.getState().addEmptyIncident()
+    useShift.getState().setIncidentField(id, 'type', '   ')
+    useShift.getState().setIncidentField(id, 'location', '')
+    const inc = useShift.getState().shift.incidents[0]
+    expect(inc.type).toBeNull()
+    expect(inc.location).toBeNull()
+  })
+
   it('removeIncident then undoRemove restores the incident at the same index', async () => {
     const { useShift } = await load()
     const st = useShift.getState()

@@ -17,8 +17,11 @@ const EMPTY_CHECKED: SectionKey[] = ['audience', 'security', 'maintenance']
 
 function fieldMissing(inc: Incident, field: IncidentField): boolean {
   switch (field) {
-    case 'type': return inc[field] === null
-    case 'location': return inc[field] === null
+    case 'type':
+    case 'location': {
+      const f = inc[field]
+      return !f || !f.value.trim()
+    }
     case 'time': return inc.time === null || inc.time.value.approx
     case 'description': return inc.description === null || isDocEmpty(inc.description)
   }
@@ -63,19 +66,23 @@ export function ruleGaps(shift: Shift): DerivedGap[] {
   return gaps
 }
 
-/** An AI gap targeting an incident field resolves itself once that field has a value. */
-function aiGapResolved(shift: Shift, g: Gap): boolean {
-  if (g.target.kind !== 'incident' || !g.target.field) return false
+/**
+ * Whether a stored AI gap still counts. Derived on every read (never written back), so putting
+ * a removed incident back with "Cofnij" brings its gaps back.
+ * - An incident gap whose incident no longer exists does not count.
+ * - An incident *field* gap never counts on its own: while the field is missing the rule gap
+ *   ("Gdzie?", …) stands in for it, and once the field has a value it is resolved.
+ */
+function aiGapApplies(shift: Shift, g: Gap): boolean {
+  if (g.target.kind !== 'incident') return true
   const { incidentId, field } = g.target
-  const inc = shift.incidents.find((i) => i.id === incidentId)
-  if (!inc) return false
-  if (field === 'description') return inc.description !== null && !isDocEmpty(inc.description)
-  return inc[field] !== null
+  if (!shift.incidents.some((i) => i.id === incidentId)) return false
+  return !field
 }
 
 export function openGaps(shift: Shift): DerivedGap[] {
   const ai: DerivedGap[] = shift.gaps
-    .filter((g) => g.status === 'open' && !aiGapResolved(shift, g))
+    .filter((g) => g.status === 'open' && aiGapApplies(shift, g))
     .map((g) => ({
       id: g.id,
       target: g.target,

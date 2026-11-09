@@ -50,9 +50,37 @@ describe('gaps', () => {
     const base = apply(shift(), [{ op: 'addIncident', type: 'Bójka', description: 'Opis.' }])
     const id = base.incidents[0].id
     const s = { ...base, gaps: [aiGap({ target: { kind: 'incident', incidentId: id, field: 'location' } })] }
-    expect(openGaps(s).some((g) => g.id === 'g1')).toBe(true)
     const filled = apply(s, [{ op: 'updateIncident', incidentId: id, location: 'Bar' }])
     expect(openGaps(filled).some((g) => g.id === 'g1')).toBe(false)
+    expect(fieldGap(filled, id, 'location')).toBeUndefined()
+  })
+  it('AI gap on a removed incident is not counted', () => {
+    const base = apply(shift(), [full])
+    const id = base.incidents[0].id
+    const s = { ...base, gaps: [aiGap({ target: { kind: 'incident', incidentId: id } })] }
+    expect(requiredCount(s)).toBe(1)
+    const removed = { ...s, incidents: [], noIncidentsConfirmed: true }
+    expect(openGaps(removed).some((g) => g.id === 'g1')).toBe(false)
+    expect(requiredCount(removed)).toBe(0)
+    // Derived, not stored: putting the incident back ("Cofnij") brings the gap back.
+    expect(requiredCount({ ...removed, incidents: s.incidents })).toBe(1)
+  })
+  it('AI field gap is not double-counted with the rule gap', () => {
+    const base = apply(shift(), [{ op: 'addIncident', type: 'Bójka', description: 'Opis.', time: { hhmm: '01:00', approx: false } }])
+    const id = base.incidents[0].id
+    const s = { ...base, gaps: [aiGap({ target: { kind: 'incident', incidentId: id, field: 'location' }, question: 'W którym miejscu?' })] }
+    expect(openGaps(s).filter((g) => g.weight === 'required').map((g) => g.question)).toEqual(['Gdzie?'])
+    expect(requiredCount(s)).toBe(1)
+  })
+  it('blank type and location produce rule gaps', () => {
+    const s = apply(shift(), [{ op: 'addIncident', type: '', location: '  ', description: 'Opis.', time: { hhmm: '01:00', approx: false } }])
+    const id = s.incidents[0].id
+    expect(fieldGap(s, id, 'type')?.question).toBe('Jaki typ zdarzenia?')
+    expect(fieldGap(s, id, 'location')?.question).toBe('Gdzie?')
+    // Blank values stored by older data still count as missing.
+    const stored = structuredClone(s)
+    stored.incidents[0].type = { value: ' ', prov: { by: 'manager', at: now, sourceNoteIds: [] } }
+    expect(fieldGap(stored, id, 'type')).toBeDefined()
   })
   it('requiredCount counts only required gaps', () => {
     const s = shift({ noIncidentsConfirmed: false })
