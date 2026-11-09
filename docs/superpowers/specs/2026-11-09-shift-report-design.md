@@ -141,6 +141,8 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
     - Interwencja policji (police intervention)
     - Inne (other)
   - **Time:** opens a **time picker popover** (HH:MM in 5-minute steps, plus typing an exact time). An approximate time is shown in amber, with an amber underline, as **"? 01:00"**: a bold question mark before the time marks it as an estimate.
+    - **Estimated time (`? 01:00`):** hovering or focusing shows a **tooltip** with the AI's explanation, quoting the manager's own words: *"W notatce: „koło 1". Sprecyzuj, jaka była dokładna godzina zdarzenia."* ("The note says 'around 1'. Specify the exact time of the event.") Clicking opens the time picker. There is **no separate inline panel or chip** for this.
+    - The tooltip uses impersonal phrasing because a Polish second-person past tense is gendered ("Napisałeś/Napisałaś").
   - **Place:** opens a popover listing the venue's areas, plus "Inne…" (other) for free text:
     - Wejście / bramka (entrance / door)
     - Szatnia (cloakroom)
@@ -169,13 +171,12 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
   - "Zamknij" dismisses the box for this shift.
 
 ### 4.6 Gaps
-- **Chips:**
+- **Field gaps** (missing or estimated type, time, place or description, from the rule in §6.3) are shown **on the field itself**, not as chips: an amber placeholder ("godzina", "miejsce", …) or the amber `? 01:00`, each with an explanatory tooltip. They still count toward "N wymagane".
+- **Question gaps** ("Czy wezwano policję?", were the police called?) are shown as **chips**:
   - `required`: amber fill, bolder text.
   - `optional`: dashed grey outline, muted text.
   - There is no legend. The two chip styles plus the header count ("3 wymagane · 2 warto dodać") explain themselves.
-- **Clicking a chip opens an inline answer field** in the incident or section, pre-filled with the AI's suggestion and a reason when one exists (for example "AI: w notatce „koło 1", zapisana 01:30 — popraw, jeśli wiesz dokładniej", meaning "the note says 'around 1', recorded at 01:30; correct it if you know better").
-  - A gap tied to a field (time, place, …) writes that field.
-  - A question gap ("Czy wezwano policję?", "were the police called?") stores the answer as a Q&A line.
+- **Clicking a question chip opens a small popover** with a one-line answer field, pre-filled with the AI's suggestion when there is one. Saving stores the answer as a Q&A line under the incident or section.
 - Optional chips can be dismissed (×). Required chips can only be answered, or left open and marked in the closed report.
 - **Header:** "⚠ N wymagane" in amber, then "· M warto dodać" in muted grey.
 
@@ -220,7 +221,7 @@ type Note = {
   routedTo: string[]                       // labels for the routing tag
 }
 
-type EventTime = { hhmm: string; approx: boolean }   // calendar date derived from shift date (after midnight → next day)
+type EventTime = { hhmm: string; approx: boolean; sourcePhrase?: string }  // sourcePhrase: the manager's words, e.g. "koło 1", quoted in the tooltip   // calendar date derived from shift date (after midnight → next day)
 
 type QA = { gapId: string; question: string; answer: Field<string> }
 
@@ -431,7 +432,7 @@ tests/unit  tests/e2e
 **Cut line, if behind, in this order:**
 1. The suggestions box.
 2. Duplicate (keep remove with undo).
-3. Pre-filled AI suggestions in gap answers (keep plain inline answers).
+3. Pre-filled AI suggestions in question-gap popovers (keep an empty answer field).
 4. Phone tabs (keep a stacked layout).
 5. The time picker dropdown (keep a plain HH:MM input).
 
