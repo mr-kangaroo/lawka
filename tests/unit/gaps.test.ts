@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createIdGen } from '@/lib/report/ids'
 import { applyOperations, type Operation } from '@/lib/report/operations'
-import { fieldGap, openGaps, requiredCount, ruleGaps } from '@/lib/report/gaps'
+import { fieldGap, openGaps, requiredCount, ruleGaps, sectionQuestionGaps } from '@/lib/report/gaps'
 import type { Gap, Shift } from '@/lib/report/types'
 
 const now = '2026-11-09T01:00:00.000Z'
@@ -81,6 +81,12 @@ describe('gaps', () => {
     const stored = structuredClone(s)
     stored.incidents[0].type = { value: ' ', prov: { by: 'manager', at: now, sourceNoteIds: [] } }
     expect(fieldGap(stored, id, 'type')).toBeDefined()
+  })
+  it('AI section gaps are listed for their section, as openGaps counts them', () => {
+    const s = shift({ gaps: [aiGap({ target: { kind: 'section', key: 'bar' } }), aiGap({ id: 'g2', target: { kind: 'section', key: 'audience' } })] })
+    expect(sectionQuestionGaps(s.gaps, 'bar').map((g) => g.id)).toEqual(['g1'])
+    expect(openGaps(s).filter((g) => g.origin === 'ai').map((g) => g.id)).toEqual(['g1', 'g2'])
+    expect(sectionQuestionGaps([{ ...s.gaps[0], status: 'answered' }], 'bar')).toEqual([])
   })
   it('requiredCount counts only required gaps', () => {
     const s = shift({ noIncidentsConfirmed: false })

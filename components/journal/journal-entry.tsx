@@ -9,7 +9,11 @@ import { AttachmentChip } from './attachment-chip'
 
 function EntryStatus({ note, waiting, routeLabels }: EntryProps) {
   const retryNote = useShift((s) => s.retryNote)
+  const sent = useShift((s) => Boolean(s.shift.sentAt))
 
+  // After sending nothing is processed any more: no spinner, no "Ponów".
+  if (sent && note.status !== 'processed')
+    return <span className="text-[13px] text-muted-foreground">nie przetworzono</span>
   if (waiting) return <span className="text-[13px] text-required">czeka na Twoją odpowiedź ↓</span>
   if (note.status === 'pending')
     return (

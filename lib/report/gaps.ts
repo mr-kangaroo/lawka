@@ -80,18 +80,26 @@ function aiGapApplies(shift: Shift, g: Gap): boolean {
   return !field
 }
 
+const fromAi = (g: Gap): DerivedGap => ({
+  id: g.id,
+  target: g.target,
+  question: g.question,
+  weight: g.weight,
+  origin: 'ai',
+  ...(g.suggestion ? { suggestion: g.suggestion } : {}),
+})
+
 export function openGaps(shift: Shift): DerivedGap[] {
-  const ai: DerivedGap[] = shift.gaps
-    .filter((g) => g.status === 'open' && aiGapApplies(shift, g))
-    .map((g) => ({
-      id: g.id,
-      target: g.target,
-      question: g.question,
-      weight: g.weight,
-      origin: 'ai' as const,
-      ...(g.suggestion ? { suggestion: g.suggestion } : {}),
-    }))
+  const ai = shift.gaps.filter((g) => g.status === 'open' && aiGapApplies(shift, g)).map(fromAi)
   return [...ruleGaps(shift), ...ai]
+}
+
+/**
+ * Open AI question gaps on one section, shown as chips under it. The same gaps `openGaps` lists
+ * (section gaps always apply); takes only `gaps` so a section doesn't re-render on every edit.
+ */
+export function sectionQuestionGaps(gaps: Gap[], key: SectionKey): DerivedGap[] {
+  return gaps.filter((g) => g.status === 'open' && g.target.kind === 'section' && g.target.key === key).map(fromAi)
 }
 
 export function requiredCount(shift: Shift): number {
