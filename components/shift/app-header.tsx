@@ -7,6 +7,7 @@ import { TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { requiredCount } from '@/lib/report/gaps'
 import { formatHHMM } from '@/lib/report/time'
 import { useShift } from '@/store/shift'
+import { DemoMenu } from './demo-menu'
 
 export type AppHeaderProps = {
   /** "Wyślij raport" on the Raport tab. Task 11 passes the review-dialog opener. */
@@ -81,6 +82,7 @@ export function AppHeader({ onSend }: AppHeaderProps) {
           <ArrowLeftIcon aria-hidden />
           <span className="hidden sm:inline">Wróć</span>
         </Button>
+        <DemoMenu />
         <ShiftStatus />
         <div className="sm:hidden">{primary}</div>
       </div>
