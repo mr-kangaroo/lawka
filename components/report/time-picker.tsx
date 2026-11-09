@@ -15,10 +15,13 @@ const ERROR = 'Podaj godzinę, np. 01:05'
  */
 export function TimePicker({
   value,
+  hint,
   startHHMM,
   onSave,
 }: {
   value: EventTime | null
+  /** Muted helper text at the top (for an estimated time; tooltips don't open on touch). */
+  hint?: string
   startHHMM: string
   onSave(hhmm: string): void
 }) {
@@ -42,6 +45,7 @@ export function TimePicker({
 
   return (
     <div className="flex flex-col">
+      {hint && <p className="border-b px-3 py-2 text-xs leading-snug text-muted-foreground">{hint}</p>}
       <form
         className="flex items-center gap-2 border-b p-2"
         onSubmit={(e) => {

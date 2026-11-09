@@ -119,8 +119,9 @@ export function IncidentBlock({
         <InlineField
           label={timeLabel}
           value={
-            time &&
-            (time.approx ? (
+            !time || (readOnly && time.approx) // Sent with an unresolved estimate: "brak danych".
+              ? null
+              : (time.approx ? (
               <>
                 <span aria-hidden className="mr-[3px] font-semibold">
                   ?
@@ -133,12 +134,16 @@ export function IncidentBlock({
           }
           placeholder="godzina"
           required={time?.approx}
-          tooltip={timeTooltip}
+          tooltip={readOnly && time?.approx ? undefined : timeTooltip}
           readOnly={readOnly}
           contentClassName="w-56"
           {...openProps('time')}
         >
-          <TimePicker value={time} startHHMM={startHHMM} onSave={(hhmm) => save('time', { hhmm, approx: false })} />
+          <TimePicker
+            value={time}
+            hint={time?.approx ? approxTimeTooltip(time.sourcePhrase) : undefined}
+            startHHMM={startHHMM} onSave={(hhmm) => save('time', { hhmm, approx: false })}
+          />
         </InlineField>
         <Dot />
         <InlineField

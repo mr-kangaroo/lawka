@@ -53,7 +53,7 @@ export function GapChip({ gap, readOnly }: { gap: DerivedGap; readOnly: boolean 
           type="button"
           onClick={() => dismissGap(gap.id)}
           aria-label={`Pomiń pytanie: ${gap.question}`}
-          className="relative mr-1.5 grid size-4 place-items-center rounded-sm text-muted-foreground outline-none before:absolute before:-inset-1 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 max-sm:before:-inset-3.5"
+          className="relative mr-1.5 grid size-4 place-items-center rounded-sm text-muted-foreground outline-none before:absolute before:-inset-1 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 max-sm:before:-inset-y-3.5 max-sm:before:-right-3.5 max-sm:before:left-0"
         >
           <XIcon className="size-3" aria-hidden />
         </button>
