@@ -35,6 +35,8 @@ test('full shift flow: journal, possible incident, report, undo, send', async ({
   // Raport: 3 incidents plus the possible one from 01:48; confirming it makes it a 4th incident.
   await reportTab.click()
   await expect(incidents).toHaveCount(3)
+  // Attachments in the report are placeholder thumbnails.
+  await expect(page.getByRole('img', { name: 'Zdjęcie: IMG_2231.jpg' })).toBeVisible()
   const possible = page.getByRole('region', { name: 'Możliwy incydent #4' })
   await possible.getByRole('button', { name: 'Tak, to incydent' }).click()
   await expect(incidents).toHaveCount(4)
