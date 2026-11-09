@@ -1,0 +1,60 @@
+import { expect, test } from './fixtures'
+
+test('full shift flow: journal, question, report, undo, send', async ({ page }) => {
+  const isPhone = test.info().project.name === 'Pixel 7'
+  const journalTab = page.getByRole('tab', { name: isPhone ? 'Dziennik' : 'Dziennik zmiany' })
+  const reportTab = page.getByRole('tab', { name: /^Raport/ })
+  const incidents = page.getByRole('region', { name: /^Incydent #\d+$/ })
+
+  await page.goto('/')
+  await expect(reportTab).toBeVisible()
+
+  // Demo loaded: 3 required gaps in the badge.
+  await expect(reportTab).toHaveAccessibleName(/3 do uzupełnienia/)
+
+  // Add a note in Dziennik; the (mocked) AI files it as a new incident, numbered by event time.
+  await journalTab.click()
+  const note = page.getByRole('textbox', { name: 'Nowa notatka' })
+  await note.fill('23:10 awantura na bramce')
+  await note.press('Enter')
+  await expect(page.getByText('→ Incydent #2')).toBeVisible()
+
+  // Answer the AI question card with a quick reply.
+  const card = page.getByRole('region', { name: 'Pytanie do notatki' })
+  await expect(card).toBeVisible()
+  await card.getByRole('button', { name: 'Nie, tylko informacja' }).click()
+  await expect(card).toBeHidden()
+
+  // Raport: 3 incidents.
+  await reportTab.click()
+  await expect(incidents).toHaveCount(3)
+
+  // Answer the police gap chip: it disappears.
+  await page.getByRole('button', { name: 'Czy wezwano policję?' }).click()
+  await page.getByRole('textbox', { name: 'Czy wezwano policję?' }).fill('Tak, policja przyjechała o 22:55')
+  await page.getByRole('button', { name: 'Zapisz' }).click()
+  await expect(page.getByRole('button', { name: 'Czy wezwano policję?' })).toHaveCount(0)
+
+  // Ochrona: confirm "Bez uwag".
+  const security = page.getByRole('region', { name: 'Ochrona' })
+  await security.getByRole('button', { name: 'Bez uwag' }).click()
+  await expect(security.getByText('Bez uwag.')).toBeVisible()
+
+  // Duplicate, remove, undo.
+  const menuOf = (n: number) => page.getByRole('button', { name: `Akcje incydentu #${n}` })
+  await menuOf(1).click()
+  await page.getByRole('menuitem', { name: 'Duplikuj' }).click()
+  await expect(incidents).toHaveCount(4)
+
+  await menuOf(1).click()
+  await page.getByRole('menuitem', { name: 'Usuń' }).click()
+  await expect(incidents).toHaveCount(3)
+  await page.getByRole('button', { name: 'Cofnij' }).click()
+  await expect(incidents).toHaveCount(4)
+
+  // Send with a gap left open: review dialog, send anyway, read-only report.
+  await page.getByRole('button', { name: 'Wyślij raport' }).click()
+  await page.getByRole('button', { name: 'Wyślij mimo to' }).click()
+  await expect(page.getByText(/^Wysłano/)).toBeVisible()
+  await expect(page.getByText('brak danych').first()).toBeVisible()
+})
