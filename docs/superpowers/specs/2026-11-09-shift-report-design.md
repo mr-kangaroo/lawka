@@ -93,12 +93,11 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 │ 01:48 unclear note                  │                                                                    │
 │   ┌ ✦ AI question                ┐  │ Podsumowanie                                                        │
 │   │ [Tak, zapisz jako incydent]  │  │ Pełna sala, kolejka do 22:30…                                       │
-│   │ [Nie, tylko informacja]      │  │ Incydenty                                                           │
+│   │ [Nie, tylko informacja]      │  │ Incydenty                                         + Dodaj incydent  │
 │   │ [ …albo dopisz, co się stało ]│ │ ┌ #1 Bójka · 22:40 · Bar główny  (dotted underlines)   dodano o 22:41 ┐ │
 │   └──────────────────────────────┘  │ │ description · Q—A lines · [IMG] · gap chips                      │ │
 │ 02:52 note  ⟳ porządkuję…           │ └──────────────────────────────────────────────────────────────────┘ │
-│ ┌ Nowa notatka…     📎 [Dodaj ↵] ┐  │ [+ Dodaj incydent]                                                  │
-│ └───────────────────────────────┘   │ Publiczność / Imprezy prywatne / Usterki i sprzęt … (rich text)      │
+│ ┌ Nowa notatka…     📎 [Dodaj ↵] ┐  │ └───────────────────────────────┘   │ Publiczność / Imprezy prywatne / Usterki i sprzęt … (rich text)      │
 │                                     │ ┌ ✦ Nic jeszcze o ochronie… [+ Ochrona] [+ Bar] [Zamknij] ┐         │
 └─────────────────────────────────────┴────────────────────────────────────────────────────────────────────┘
 ```
@@ -149,7 +148,8 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
     - Bar główny (main bar)
     - Parkiet (dance floor)
     - Loża VIP (VIP booth)
-    - Toalety (toilets)
+    - Toaleta damska (women's toilet)
+    - Toaleta męska (men's toilet)
     - Palarnia (smoking area)
     - Przed lokalem (outside the venue)
   - Right side: **"dodano o HH:MM"** (added at). **On hover or focus** this becomes a **⋯ button** opening a menu:
@@ -161,7 +161,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
   - Q&A lines from answered gaps ("Pomoc rannemu? — Opatrzony przez ochronę…", "help for the injured? — treated by security…").
   - Attachment chips.
   - Gap chips.
-- **"+ Dodaj incydent"** (add incident, dashed button) below the last incident adds an empty incident. Its four required fields immediately show as required gaps.
+- **"+ Dodaj incydent"** (add incident) is a quiet text button **to the right of the "Incydenty" heading**. Most incidents arrive through notes and the AI, so manual adding is secondary. It adds an empty incident whose four required fields immediately show as field gaps.
 
 ### 4.5 Report: sections
 - Fixed headings in the brief's order. **A section appears only when it has content.** Podsumowanie (summary) always appears once there's anything to summarise.
