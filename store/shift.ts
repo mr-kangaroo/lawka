@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { buildContext, requestOperations } from '@/lib/ai/client'
 import { applyOperations } from '@/lib/report/operations'
+import { retractNote } from '@/lib/report/retract'
 import { appendBlocks, emptyDoc, paragraphsToBlocks } from '@/lib/report/rich'
 import { createDemoShift, createEmptyShift } from '@/lib/report/seed'
 import type {
@@ -22,12 +23,15 @@ export type ShiftState = {
   tab: Tab
   lastRemoved?: { incident: Incident; index: number }
 
+  /** Adds a note and files it; resolves with the note's id once processed (undefined when nothing was added). */
   submitNote(
     text: string,
     attachments: Attachment[],
-    opts?: { replyTo?: string; answersGapId?: string },
-  ): Promise<void>
+    opts?: { answersGapId?: string },
+  ): Promise<string | undefined>
   retryNote(noteId: string): Promise<void>
+  /** Saves a new text for a note and files it again (spec §4.2). */
+  editNote(noteId: string, text: string): Promise<void>
 
   setTab(tab: Tab): void
   setDate(date: string): void
@@ -36,6 +40,8 @@ export type ShiftState = {
   setIncidentDescription(incidentId: string, doc: RichDoc): void
   addEmptyIncident(): string
   duplicateIncident(incidentId: string): void
+  /** "Tak, to incydent": the AI's suspected incident is confirmed. */
+  confirmIncident(incidentId: string): void
   removeIncident(incidentId: string): void
   undoRemove(): void
   confirmNoIncidents(): void
@@ -62,8 +68,7 @@ function validShape(v: unknown): v is { shift: Shift; tab?: Tab } {
     typeof shift.sections === 'object' &&
     shift.sections !== null &&
     !Array.isArray(shift.sections) &&
-    Array.isArray(shift.gaps) &&
-    Array.isArray(shift.questions)
+    Array.isArray(shift.gaps)
   )
 }
 
@@ -116,12 +121,26 @@ export const useShift = create<ShiftState>()(
         const shift = get().shift
         const note = shift.notes.find((n) => n.id === noteId)
         if (!note) return
+        // An edited note replaces what its earlier version wrote; nothing changes unless the AI succeeds.
+        const editing = note.editedFrom !== undefined
+        const base = (s: Shift) => (editing ? retractNote(s, noteId) : s)
         try {
-          const context = buildContext(shift, note, new Date())
+          const context = buildContext(base(shift), note, new Date())
           const { operations } = await requestOperations(note, context)
           const cur = get().shift
           if (cur.sentAt || !cur.notes.some((n) => n.id === noteId)) return
-          set({ shift: applyOperations(cur, operations, noteId, nowISO(), newId) })
+          const next = applyOperations(base(cur), operations, noteId, nowISO(), newId)
+          if (editing) {
+            const n = next.notes.find((x) => x.id === noteId)!
+            delete n.editedFrom
+            // Keep the incidents it was filed to, even when the edit changed nothing there.
+            for (const id of context.editing?.incidentIds ?? []) {
+              const exists = next.incidents.some((i) => i.id === id)
+              if (exists && !n.routedTo.some((t) => t.kind === 'incident' && t.incidentId === id))
+                n.routedTo.unshift({ kind: 'incident', incidentId: id })
+            }
+          }
+          set({ shift: next })
         } catch {
           const cur = get().shift
           if (cur.sentAt || !cur.notes.some((n) => n.id === noteId)) return
@@ -138,8 +157,8 @@ export const useShift = create<ShiftState>()(
 
         async submitNote(text, attachments, opts) {
           const trimmed = text.trim()
-          if (!trimmed && attachments.length === 0) return
-          if (get().shift.sentAt) return
+          if (!trimmed && attachments.length === 0) return undefined
+          if (get().shift.sentAt) return undefined
           const id = newId()
           edit((s) => {
             s.notes.push({
@@ -147,8 +166,8 @@ export const useShift = create<ShiftState>()(
               createdAt: nowISO(),
               text: trimmed,
               attachments: structuredClone(attachments),
-              ...(opts?.replyTo ? { replyTo: opts.replyTo } : {}),
               ...(opts?.answersGapId ? { answersGapId: opts.answersGapId } : {}),
+              ...(get().tab === 'report' || opts?.answersGapId ? { fromReport: true } : {}),
               status: 'pending',
               routedTo: [],
             })
@@ -161,6 +180,7 @@ export const useShift = create<ShiftState>()(
             }
           })
           await processNote(id)
+          return id
         },
 
         async retryNote(noteId) {
@@ -168,6 +188,20 @@ export const useShift = create<ShiftState>()(
           if (!note || note.status !== 'failed' || get().shift.sentAt) return
           edit((s) => {
             s.notes.find((n) => n.id === noteId)!.status = 'pending'
+          })
+          await processNote(noteId)
+        },
+
+        async editNote(noteId, text) {
+          const trimmed = text.trim()
+          const note = get().shift.notes.find((n) => n.id === noteId)
+          if (!note || get().shift.sentAt || note.status === 'pending') return
+          if (trimmed === note.text || (!trimmed && note.attachments.length === 0)) return
+          edit((s) => {
+            const n = s.notes.find((x) => x.id === noteId)!
+            n.editedFrom ??= n.text
+            n.text = trimmed
+            n.status = 'pending'
           })
           await processNote(noteId)
         },
@@ -232,6 +266,13 @@ export const useShift = create<ShiftState>()(
           })
         },
 
+        confirmIncident(incidentId) {
+          edit((s) => {
+            const inc = s.incidents.find((i) => i.id === incidentId)
+            if (inc) delete inc.suspected
+          })
+        },
+
         removeIncident(incidentId) {
           const cur = get().shift
           if (cur.sentAt) return
@@ -292,8 +333,9 @@ export const useShift = create<ShiftState>()(
     },
     {
       name: 'lawka:v1',
-      // v2: Note.routedTo holds RouteTarget objects (v1 stored label strings). Older data resets to the demo.
-      version: 2,
+      // v2: Note.routedTo holds RouteTarget objects (v1 stored label strings).
+      // v3: AI questions replaced by suspected incidents. Older data resets to the demo.
+      version: 3,
       storage: safeStorage,
       partialize: (s) => ({ shift: s.shift, tab: s.tab }),
       migrate: () => ({ shift: createDemoShift(), tab: 'journal' as Tab }),

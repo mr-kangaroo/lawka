@@ -9,7 +9,7 @@ import {
   paragraphsToBlocks,
   replaceAiBlocks,
 } from './rich'
-import { formatHHMM, minutesFromShiftStart } from './time'
+import { estimateVagueTime, formatHHMM, minutesFromShiftStart } from './time'
 import type {
   Attachment,
   BlockAttrs,
@@ -53,6 +53,7 @@ export const OperationSchema = z.discriminatedUnion('op', [
     time: EventTimeSchema.optional(),
     location: z.string().optional(),
     description: z.string(),
+    suspected: z.boolean().optional(),
   }),
   z.object({
     op: z.literal('updateIncident'),
@@ -72,7 +73,6 @@ export const OperationSchema = z.discriminatedUnion('op', [
     suggestion: z.object({ value: z.string(), reason: z.string() }).optional(),
   }),
   z.object({ op: z.literal('resolveGap'), gapId: z.string() }),
-  z.object({ op: z.literal('askQuestion'), question: z.string(), options: z.array(z.string()) }),
 ])
 
 export const OperationsResponseSchema = z.object({ operations: z.array(OperationSchema) })
@@ -94,11 +94,16 @@ export function sortIncidents(shift: Shift): Incident[] {
   return [...timed, ...untimed]
 }
 
-/** Label for a routing target: "Incydent #N" (current order) or the section label; null if the incident was removed. */
+/**
+ * Label for a routing target: "Incydent #N" (current order; "Możliwy incydent #N" until confirmed)
+ * or the section label; null if the incident was removed.
+ */
 export function routeLabel(shift: Shift, target: RouteTarget): string | null {
   if (target.kind === 'section') return SECTION_LABELS[target.key]
-  const index = sortIncidents(shift).findIndex((i) => i.id === target.incidentId)
-  return index < 0 ? null : `Incydent #${index + 1}`
+  const sorted = sortIncidents(shift)
+  const index = sorted.findIndex((i) => i.id === target.incidentId)
+  if (index < 0) return null
+  return `${sorted[index].suspected ? 'Możliwy incydent' : 'Incydent'} #${index + 1}`
 }
 
 export function applyOperations(
@@ -145,6 +150,16 @@ export function applyOperations(
   }
   const setField = <T>(current: Field<T> | null, value: T): Field<T> | undefined =>
     current === null || current.prov.by !== 'manager' ? aiField(value) : undefined
+  const startHHMM = formatHHMM(s.startedAt)
+  /**
+   * An estimated time follows its phrase ("po 1" → 01:30), whatever the model put in hhmm. A guess
+   * without an hour in the note ("chwilę temu", or nothing) is no time at all: the field stays empty.
+   */
+  const estimated = (t: EventTime): EventTime | null => {
+    if (!t.approx) return { ...t }
+    const e = t.sourcePhrase ? estimateVagueTime(t.sourcePhrase, startHHMM) : null
+    return e ? { ...t, hhmm: e.hhmm } : null
+  }
   /** Blank or whitespace-only text counts as absent (D7: it must not satisfy the legal minimum). */
   const present = (text: string | undefined): string | undefined => {
     const t = text?.trim()
@@ -161,11 +176,15 @@ export function applyOperations(
           id: newId(),
           createdAt: note?.createdAt ?? now,
           type: type ? aiField(type) : null,
-          time: op.time ? aiField<EventTime>({ ...op.time }) : null,
+          time: (() => {
+            const t = op.time && estimated(op.time)
+            return t ? aiField<EventTime>(t) : null
+          })(),
           location: location ? aiField(location) : null,
           description: description ? { type: 'doc', content: paragraphsToBlocks([description], attrs()) } : null,
           attachments: [],
           sourceNoteIds: [noteId],
+          ...(op.suspected ? { suspected: true } : {}),
         }
         giveAttachmentsToIncident(inc)
         s.incidents.push(inc)
@@ -185,8 +204,9 @@ export function applyOperations(
           const f = setField(inc.type, type)
           if (f) { inc.type = f; changed = true }
         }
-        if (op.time !== undefined) {
-          const f = setField(inc.time, { ...op.time } as EventTime)
+        const time = op.time && estimated(op.time)
+        if (time) {
+          const f = setField(inc.time, time)
           if (f) { inc.time = f; changed = true }
         }
         if (location) {
@@ -254,9 +274,6 @@ export function applyOperations(
         if (gap) gap.status = 'answered'
         break
       }
-      case 'askQuestion':
-        s.questions.push({ id: newId(), noteId, question: op.question, options: op.options, status: 'open' })
-        break
     }
   }
 
@@ -268,10 +285,6 @@ export function applyOperations(
   if (note) {
     note.status = 'processed'
     note.routedTo = targets
-    if (note.replyTo) {
-      const q = s.questions.find((x) => x.id === note.replyTo)
-      if (q) q.status = 'answered'
-    }
     if (note.answersGapId) {
       const g = s.gaps.find((x) => x.id === note.answersGapId)
       if (g) {

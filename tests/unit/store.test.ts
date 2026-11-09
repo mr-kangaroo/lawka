@@ -71,6 +71,68 @@ describe('store', () => {
     expect(useShift.getState().shift.notes[0].status).toBe('failed')
   })
 
+  it('editNote replaces what the note wrote, tells the AI about the edit, and keeps its incident', async () => {
+    const { useShift, req } = await load()
+    req.mockResolvedValueOnce({
+      operations: [
+        { op: 'addIncident', type: 'Bójka', description: 'Bójka przy barze.' },
+        { op: 'appendToSection', key: 'bar', paragraphs: ['Kolejka przy barze.'] },
+      ],
+      source: 'ai',
+    })
+    await useShift.getState().submitNote('bójka przy barze, kolejka', [])
+    const id = useShift.getState().shift.notes[0].id
+    const incidentId = useShift.getState().shift.incidents[0].id
+    req.mockResolvedValueOnce({
+      operations: [
+        { op: 'updateIncident', incidentId, location: 'Bar główny' },
+        { op: 'appendToIncident', incidentId, text: 'Bójka przy barze głównym.' },
+      ],
+      source: 'ai',
+    })
+    await useShift.getState().editNote(id, 'bójka przy barze głównym')
+    const ctx = req.mock.calls[1][1]
+    expect(ctx.editing).toEqual({ previousText: 'bójka przy barze, kolejka', incidentIds: [incidentId] })
+    expect(ctx.sections.find((x) => x.key === 'bar')?.text).toBe('')
+    const s = useShift.getState().shift
+    expect(s.incidents).toHaveLength(1)
+    expect(docToPlainText(s.incidents[0].description!)).toBe('Bójka przy barze głównym.')
+    expect(s.incidents[0].location?.value).toBe('Bar główny')
+    expect(docToPlainText(s.sections.bar!.doc)).toBe('')
+    expect(s.notes[0]).toMatchObject({ text: 'bójka przy barze głównym', status: 'processed', routedTo: [{ kind: 'incident', incidentId }] })
+    expect(s.notes[0]).not.toHaveProperty('editedFrom')
+  })
+
+  it('a failed edit keeps the old report text; retry goes through the edit again', async () => {
+    const { useShift, req } = await load()
+    req.mockResolvedValueOnce({ operations: [{ op: 'appendToSection', key: 'bar', paragraphs: ['Stare.'] }], source: 'ai' })
+    await useShift.getState().submitNote('stare', [])
+    const id = useShift.getState().shift.notes[0].id
+    req.mockRejectedValueOnce(new Error('boom'))
+    await useShift.getState().editNote(id, 'nowe')
+    let s = useShift.getState().shift
+    expect(s.notes[0]).toMatchObject({ text: 'nowe', status: 'failed', editedFrom: 'stare' })
+    expect(docToPlainText(s.sections.bar!.doc)).toBe('Stare.')
+    req.mockResolvedValueOnce({ operations: [{ op: 'appendToSection', key: 'bar', paragraphs: ['Nowe.'] }], source: 'ai' })
+    await useShift.getState().retryNote(id)
+    expect(req.mock.calls[2][1].editing?.previousText).toBe('stare')
+    s = useShift.getState().shift
+    expect(docToPlainText(s.sections.bar!.doc)).toBe('Nowe.')
+    expect(s.notes[0].editedFrom).toBeUndefined()
+  })
+
+  it('editNote does nothing for unchanged text, a pending note, or after sending', async () => {
+    const { useShift, req } = await load()
+    req.mockResolvedValue({ operations: [], source: 'ai' })
+    await useShift.getState().submitNote('a', [])
+    const id = useShift.getState().shift.notes[0].id
+    await useShift.getState().editNote(id, ' a ')
+    expect(req).toHaveBeenCalledTimes(1)
+    useShift.getState().send()
+    await useShift.getState().editNote(id, 'b')
+    expect(useShift.getState().shift.notes[0].text).toBe('a')
+  })
+
   it('retryNote re-requests and processes a failed note', async () => {
     const { useShift, req } = await load()
     req.mockRejectedValueOnce(new Error('boom'))
@@ -158,6 +220,26 @@ describe('store', () => {
     expect(inc.location).toBeNull()
   })
 
+  it('confirmIncident clears the suspected flag', async () => {
+    const { useShift } = await load()
+    const id = useShift.getState().addEmptyIncident()
+    useShift.setState((st) => ({
+      shift: { ...st.shift, incidents: st.shift.incidents.map((i) => (i.id === id ? { ...i, suspected: true } : i)) },
+    }))
+    useShift.getState().confirmIncident(id)
+    expect(useShift.getState().shift.incidents.find((i) => i.id === id)).not.toHaveProperty('suspected')
+  })
+
+  it('notes written in the Raport tab and gap answers are marked fromReport', async () => {
+    const { useShift } = await load()
+    await useShift.getState().submitNote('w dzienniku', [])
+    useShift.getState().setTab('report')
+    await useShift.getState().submitNote('z raportu', [])
+    const [a, b] = useShift.getState().shift.notes.slice(-2)
+    expect(a.fromReport).toBeUndefined()
+    expect(b.fromReport).toBe(true)
+  })
+
   it('removeIncident then undoRemove restores the incident at the same index', async () => {
     const { useShift } = await load()
     const st = useShift.getState()
@@ -213,7 +295,7 @@ describe('store', () => {
   })
 
   it('wrong persisted shape falls back to the demo shift', async () => {
-    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: { notes: 5 } }, version: 2 }))
+    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: { notes: 5 } }, version: 3 }))
     vi.resetModules()
     const { useShift } = await import('@/store/shift')
     expect(useShift.getState().shift.id).toBe('demo-shift')
@@ -223,22 +305,26 @@ describe('store', () => {
     const s = createEmptyShift(new Date(2026, 10, 8, 20, 0), createIdGen('p'))
     const { sections: _omit, ...noSections } = s
     void _omit
-    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: noSections, tab: 'journal' }, version: 2 }))
+    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: noSections, tab: 'journal' }, version: 3 }))
     vi.resetModules()
     const { useShift } = await import('@/store/shift')
     expect(useShift.getState().shift.id).toBe('demo-shift')
   })
 
-  it('persisted shift with non-array gaps or questions falls back to the demo shift', async () => {
+  it('persisted shift with non-array gaps falls back to the demo shift', async () => {
     const s = createEmptyShift(new Date(2026, 10, 8, 20, 0), createIdGen('p'))
-    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: { ...s, gaps: {} }, tab: 'journal' }, version: 2 }))
+    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: { ...s, gaps: {} }, tab: 'journal' }, version: 3 }))
     vi.resetModules()
     const a = await import('@/store/shift')
     expect(a.useShift.getState().shift.id).toBe('demo-shift')
-    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: { ...s, questions: null }, tab: 'journal' }, version: 2 }))
+  })
+
+  it('v2 data (with AI questions) resets to the demo shift', async () => {
+    const s = createEmptyShift(new Date(2026, 10, 8, 20, 0), createIdGen('p'))
+    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: { ...s, questions: [] }, tab: 'journal' }, version: 2 }))
     vi.resetModules()
-    const b = await import('@/store/shift')
-    expect(b.useShift.getState().shift.id).toBe('demo-shift')
+    const { useShift } = await import('@/store/shift')
+    expect(useShift.getState().shift.id).toBe('demo-shift')
   })
 
   it('v1 data (string routedTo labels) resets to the demo shift', async () => {
@@ -259,7 +345,7 @@ describe('store', () => {
       { ...base, id: 'n-pending', text: 'a', status: 'pending' },
       { ...base, id: 'n-done', text: 'b', status: 'processed' },
     )
-    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: s, tab: 'report' }, version: 2 }))
+    mem.data.set('lawka:v1', JSON.stringify({ state: { shift: s, tab: 'report' }, version: 3 }))
     vi.resetModules()
     const { useShift } = await import('@/store/shift')
     const st = useShift.getState()
@@ -336,27 +422,6 @@ describe('buildContext', () => {
     expect(ctx.startHHMM).toBe('20:00')
     expect(ctx.nowHHMM).toBe('22:05')
     expect(ctx.shiftDate).toBe('2026-11-08')
-  })
-
-  it('buildContext includes answeringQuestion for replyTo notes', async () => {
-    const { buildContext } = await import('@/lib/ai/client')
-    const { fresh } = await load()
-    const s = fresh()
-    s.notes.push({
-      id: 'orig', createdAt: new Date(2026, 10, 9, 1, 48).toISOString(), text: 'znowu ten typ przy szatni',
-      attachments: [], status: 'processed', routedTo: [],
-    })
-    s.questions.push({ id: 'q1', noteId: 'orig', question: 'Czy to był incydent?', options: ['Tak', 'Nie'], status: 'open' })
-    const reply = {
-      id: 'r1', createdAt: new Date(2026, 10, 9, 2, 5).toISOString(), text: 'Tak', attachments: [],
-      status: 'pending' as const, routedTo: [], replyTo: 'q1',
-    }
-    expect(buildContext(s, reply, new Date(2026, 10, 9, 2, 5)).answeringQuestion).toEqual({
-      id: 'q1', question: 'Czy to był incydent?', options: ['Tak', 'Nie'],
-      noteText: 'znowu ten typ przy szatni', noteHHMM: '01:48',
-    })
-    const plain = { ...reply, replyTo: undefined }
-    expect(buildContext(s, plain, new Date(2026, 10, 9, 2, 5))).not.toHaveProperty('answeringQuestion')
   })
 
   it("buildContext sets noteHHMM from the note's local time", async () => {

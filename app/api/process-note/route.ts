@@ -30,7 +30,6 @@ const BodySchema = z.object({
     attachments: list(z.unknown()),
     status: z.enum(['pending', 'processed', 'failed']),
     routedTo: list(z.looseObject({ kind: z.enum(['incident', 'section']) })),
-    replyTo: short.optional(),
     answersGapId: short.optional(),
   }),
   context: z.looseObject({
@@ -41,17 +40,8 @@ const BodySchema = z.object({
     incidents: list(z.looseObject({ id: short, number: z.number(), description: z.string().max(TEXT_MAX) })),
     sections: list(z.looseObject({ key: short, text: z.string().max(TEXT_MAX) })),
     openGaps: list(GapRefSchema),
-    openQuestions: list(z.looseObject({ id: short, question: short })),
     answeringGap: GapRefSchema.optional(),
-    answeringQuestion: z
-      .looseObject({
-        id: short,
-        question: short,
-        options: list(short),
-        noteText: z.string().max(NOTE_MAX),
-        noteHHMM: z.string().regex(HHMM),
-      })
-      .optional(),
+    editing: z.looseObject({ previousText: z.string().max(NOTE_MAX), incidentIds: list(short) }).optional(),
   }),
 })
 
@@ -83,6 +73,8 @@ export async function POST(request: Request): Promise<Response> {
     console.warn(`[process-note] AI failed: ${errorType(err)}; trying fallback`)
   }
   if (operations) return Response.json({ operations, source: 'ai' })
+  // The scripted fallback cannot tell an edit from a new note and would duplicate incidents.
+  if (context.editing) return Response.json({ error: 'unprocessable' }, { status: 422 })
 
   const fallback = fallbackOperations(note, context)
   if (fallback) return Response.json({ operations: fallback, source: 'fallback' })

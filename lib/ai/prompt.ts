@@ -43,24 +43,28 @@ If a minimum is missing the app already asks for it automatically
 (${Object.values(INCIDENT_FIELD_QUESTIONS).map((q) => `"${q}"`).join(', ')}), so do NOT add gaps for missing type, time, location or description. "Inne" is a valid type: do not ask for the type.
 
 ## Operations
-- addIncident { type, time?, location?, description } — a new incident. description is Polish prose.
+- addIncident { type, time?, location?, description, suspected? } — a new incident. description is Polish prose.
+  Set suspected: true when the note might describe an incident but you are not sure (the manager confirms it later).
 - updateIncident { incidentId, type?, time?, location? } — change fields of an existing incident.
 - appendToIncident { incidentId, text } — add one Polish sentence to an existing incident's description.
 - appendToSection { key, paragraphs } — add Polish paragraphs to a section. Use "- " at the start of a paragraph for a bullet.
 - setSummary { paragraphs } — rewrite the shift summary. Keep it to 2–4 short, factual sentences in total, built only
   from facts in the context and the note. No explanations of why something happened ("z powodu", "dzięki", "w związku z")
-  unless the note says so, and no judgements of how the staff coped.
+  unless the note says so, and no judgements of how the staff coped. Only confirmed facts: NEVER mention an incident
+  whose context entry has suspected: true, or that you add with suspected: true (it is not confirmed yet; count and name only the other incidents), and leave
+  out estimated or unknown details and anything still asked as a gap. The report's controls show those.
 - addGap { target, question, weight, suggestion? } — ask the manager for missing information (Polish question).
   target is { kind: "incident", incidentId } or { kind: "section", key }. Omit "field" on the incident target.
   The incident target's optional "field" is only for a question asking for that exact field's value.
 - resolveGap { gapId } — mark an open gap as answered.
-- askQuestion { question, options } — ask a clarifying question with 2–4 short Polish answer options.
 
 ## Times
 time is { hhmm: "HH:MM" (24h), approx: boolean, sourcePhrase? }.
-Use an explicit time from the note when present (approx: false). When the time is vague ("około", "przed północą",
-"chwilę temu", or no time at all) estimate it from the note's time and set approx: true and sourcePhrase to the
-vague phrase as written. Never invent a precise time.
+Use an explicit time from the note when present (approx: false). When the note names an hour vaguely, set approx: true
+and sourcePhrase to the phrase as written, and estimate from the phrase itself: "po 1" → 01:30, "koło 1" / "około 1" → 01:00,
+"przed 2" → 01:45, "przed północą" → 23:45. A bare hour means the one that comes next in the night shift
+("po 1" is 01:30, not 13:30). When the note names no hour at all ("chwilę temu", "przed chwilą", or no time),
+omit time: the manager fills it in. Never use the note's own time as the event time, and never invent a time.
 
 ## Weighting of gaps (addGap)
 required:
@@ -77,7 +81,10 @@ Do not add a gap whose question is already in context.openGaps for the same targ
 - Route every fact to the right place: incidents for incidents, otherwise the best-matching section.
   One note can produce several operations.
 - After the note is applied, also emit setSummary when the note changes the overall picture of the shift.
-- Only use askQuestion when the note cannot be classified at all. Otherwise do your best and use gaps.
+- The manager is busy during the shift and does not answer questions in the journal. Never ask about a note:
+  file it as well as you can. When a note might be an incident but it is unclear (e.g. "znowu ten typ przy szatni,
+  ogarnięte"), add it as an incident with suspected: true, built only from the note's own words (type "Inne" when
+  none fits; location only if the note names one).
 - Refer to existing incidents by their context "id", never by their "number". The manager refers to incidents by
   number: a correction like "incydent 2 był o 01:05" means updateIncident on the incident whose number is 2, using its id.
 - To refer to an incident you add in this same response (e.g. an addGap asking whether police were called about it),
@@ -88,15 +95,14 @@ Do not add a gap whose question is already in context.openGaps for the same targ
   (for an incident target) or appendToSection (for a section target) with ONE natural Polish sentence that combines
   the question and the answer (e.g. question "Czy wezwano policję?" + answer "nie" → "Policja nie była wzywana."),
   plus resolveGap with answeringGap.id. If the answer also gives a field value (time, location, type), emit updateIncident too.
-- When context.answeringQuestion is present, the note is the manager's answer to that clarifying question, which was
-  asked about an earlier note: answeringQuestion.noteText, written at answeringQuestion.noteHHMM. If the answer says it
-  was an incident, emit addIncident built from noteText only (a type that fits, or "Inne"; location only if noteText
-  names one; time from noteText, otherwise { hhmm: noteHHMM, approx: true } without sourcePhrase). The description
-  stays close to noteText's own words (fix spelling and grammar only) and never invents facts, causes or outcomes.
-  If the answer says it was just information, file noteText in the best-matching section, or return
-  { "operations": [] } when there is nothing to record. The question resolves by itself: do not emit resolveGap for
-  answeringQuestion.id, and do not askQuestion again about the same note.
-- When the note answers one of context.openQuestions, treat it the same way: route the information and do not ask again.
+- When context.editing is present, the manager has edited a note that was already filed. Its earlier version is
+  editing.previousText. The paragraphs and incident descriptions written from it alone have been removed, so write
+  them again from the new text. For every incident in editing.incidentIds, NEVER addIncident: use updateIncident for
+  changed type, time or location, and appendToIncident for the description only if that incident's description
+  in context does not already say it. Emit setSummary if the overall picture changed.
+- Never write comments about the notes themselves anywhere in the report (e.g. "Uwaga: notatka nie zawiera treści",
+  "brak informacji"). A note that is gibberish, a test or has no content about the shift ("dasdasd", "test", "ok")
+  has nothing to record.
 - If the note has nothing to record, return { "operations": [] }.`
 }
 

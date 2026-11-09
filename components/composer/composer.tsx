@@ -1,7 +1,6 @@
 'use client'
 
 import {
-  useEffect,
   useId,
   useRef,
   useState,
@@ -9,15 +8,14 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from 'react'
-import { ArrowUpIcon, CornerDownLeftIcon, MicIcon, PaperclipIcon, XIcon } from 'lucide-react'
+import { ArrowUpIcon, MicIcon, PaperclipIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { AttachmentChip } from '@/components/journal/attachment-chip'
-import { isAwaitingAnswer } from '@/components/journal/ai-question-card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { formatHHMM } from '@/lib/report/time'
 import type { Attachment } from '@/lib/report/types'
 import { useShift } from '@/store/shift'
+import { submitFromReport } from '@/components/report/report-note'
 import { useSpeech } from './use-speech'
 import { pickFakeAttachment } from './fake-attach'
 import { FiledConfirmation } from './filed-confirmation'
@@ -39,21 +37,13 @@ export type ComposerProps = {
   placeholder: string
   /** Shorter placeholder below 640 px, where the input is one line. Defaults to `placeholder`. */
   compactPlaceholder?: string
-  /**
-   * Reply mode: the AI question (id) the next submit answers. Set by the question card's
-   * "Odpowiedz"; ignored once that question is no longer awaiting an answer.
-   */
-  replyTo?: string | null
-  /** Leaves reply mode: called after a reply is submitted and when the chip's × is clicked. */
-  onReplyEnd?: () => void
 }
 
 /**
  * The single input pinned at the bottom of both tabs (spec §4.2).
- * Enter submits, Shift+Enter adds a new line. Notes are independent unless the composer is
- * in reply mode (`replyTo`), entered explicitly from the question card.
+ * Enter submits, Shift+Enter adds a new line.
  */
-export function Composer({ placeholder, compactPlaceholder, replyTo, onReplyEnd }: ComposerProps) {
+export function Composer({ placeholder, compactPlaceholder }: ComposerProps) {
   const id = useId()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const isPhone = useIsPhone()
@@ -63,28 +53,15 @@ export function Composer({ placeholder, compactPlaceholder, replyTo, onReplyEnd 
   const submitNote = useShift((s) => s.submitNote)
   const tab = useShift((s) => s.tab)
   const sent = useShift((s) => Boolean(s.shift.sentAt))
-  const replyQuestion = useShift((s) =>
-    replyTo ? s.shift.questions.find((q) => q.id === replyTo && isAwaitingAnswer(s.shift, q)) : undefined,
-  )
-  const replyNoteTime = useShift((s) => {
-    const note = replyQuestion && s.shift.notes.find((n) => n.id === replyQuestion.noteId)
-    return note ? formatHHMM(note.createdAt) : null
-  })
-
-  useEffect(() => {
-    if (replyTo) textareaRef.current?.focus()
-  }, [replyTo])
-
   const canSubmit = !sent && (text.trim().length > 0 || attachments.length > 0)
 
   function submit() {
     if (!canSubmit) return
     speech.cancel()
-    void submitNote(text, attachments, replyQuestion ? { replyTo: replyQuestion.id } : undefined)
+    if (tab === 'report') submitFromReport(text, attachments)
+    else void submitNote(text, attachments)
     setText('')
     setAttachments([])
-    if (replyTo) onReplyEnd?.()
-    if (tab === 'report') toast('Dodano do dziennika')
   }
 
   function onSubmit(e: FormEvent) {
@@ -106,25 +83,8 @@ export function Composer({ placeholder, compactPlaceholder, replyTo, onReplyEnd 
         onSubmit={onSubmit}
         className="flex flex-col gap-2 rounded-2xl border border-input bg-muted/40 p-2 focus-within:border-ring sm:rounded-[14px] sm:py-2.5 sm:pr-2.5 sm:pl-3.5"
       >
-        {(replyQuestion || attachments.length > 0) && (
+        {attachments.length > 0 && (
           <div className="flex flex-wrap gap-1.5 px-1 pt-1 sm:px-0">
-            {replyQuestion && (
-              <span className="inline-flex h-6 items-center gap-1.5 rounded-md bg-muted px-2 text-xs text-foreground">
-                <CornerDownLeftIcon className="size-3" aria-hidden />
-                Odpowiadasz na pytanie z {replyNoteTime}
-                <button
-                  type="button"
-                  onClick={() => {
-                    onReplyEnd?.()
-                    textareaRef.current?.focus()
-                  }}
-                  aria-label="Anuluj odpowiedź"
-                  className="relative -mr-1 grid size-4 place-items-center rounded-sm text-muted-foreground before:absolute before:-inset-3.5 hover:text-foreground"
-                >
-                  <XIcon className="size-3" aria-hidden />
-                </button>
-              </span>
-            )}
             {attachments.map((a) => (
               <AttachmentChip
                 key={a.id}

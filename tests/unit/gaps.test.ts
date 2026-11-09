@@ -9,13 +9,31 @@ function shift(over: Partial<Shift> = {}): Shift {
   return {
     id: 's1', date: '2026-11-08', startedAt: '2026-11-08T20:00:00.000Z', authorId: 'p1',
     notes: [{ id: 'n1', createdAt: now, text: 'x', attachments: [], status: 'pending', routedTo: [] }],
-    incidents: [], sections: {}, gaps: [], questions: [], noIncidentsConfirmed: true, ...over,
+    incidents: [], sections: {}, gaps: [], noIncidentsConfirmed: true, ...over,
   }
 }
 const apply = (s: Shift, ops: Operation[]) => applyOperations(s, ops, 'n1', now, createIdGen('t'))
 const full: Operation = { op: 'addIncident', type: 'Bójka', location: 'Bar', description: 'Opis.', time: { hhmm: '01:00', approx: false } }
 
 describe('gaps', () => {
+  it('an empty shift has no badge count, but the no-incidents confirmation stays a required gap', () => {
+    const empty = shift({ notes: [], noIncidentsConfirmed: false })
+    expect(requiredCount(empty)).toBe(0)
+    expect(openGaps(empty).some((g) => g.id === 'rule:no-incidents' && g.weight === 'required')).toBe(true)
+    expect(requiredCount(shift({ noIncidentsConfirmed: false }))).toBe(1)
+  })
+
+  it('a suspected incident asks only "Czy to był incydent?" until confirmed', () => {
+    const s = apply(shift(), [{ op: 'addIncident', type: 'Inne', description: 'Coś przy szatni.', suspected: true }])
+    const id = s.incidents[0].id
+    expect(ruleGaps(s).filter((g) => g.target.kind === 'incident')).toEqual([
+      { id: `rule:${id}:suspected`, target: { kind: 'incident', incidentId: id }, question: 'Czy to był incydent?', weight: 'required', origin: 'rule' },
+    ])
+    expect(fieldGap(s, id, 'location')).toBeUndefined()
+    const confirmed = { ...s, incidents: [{ ...s.incidents[0], suspected: undefined }] }
+    expect(ruleGaps(confirmed).filter((g) => g.target.kind === 'incident').map((g) => g.id)).toEqual([`rule:${id}:time`, `rule:${id}:location`])
+  })
+
   it('approx time yields a required rule gap', () => {
     const s = apply(shift(), [{ ...full, time: { hhmm: '01:00', approx: true, sourcePhrase: 'koło 1' } } as Operation])
     const g = ruleGaps(s).find((x) => x.id === `rule:${s.incidents[0].id}:time`)

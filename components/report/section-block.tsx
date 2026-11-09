@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from 'cn'
+import { CheckIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { EMPTY_SECTION_PROMPTS, FIXED_SECTIONS, SECTION_LABELS } from '@/lib/report/catalog'
@@ -51,30 +52,20 @@ export function SectionBlock({ sectionKey, readOnly, autoFocus, className }: Sec
   const empty = isDocEmpty(doc)
   const prompt = promptFor(sectionKey)
 
+  const confirmable = empty && !readOnly && canConfirm(sectionKey)
+
   let body
   if (empty && readOnly) {
     body = <p className="text-muted-foreground">—</p>
-  } else if (empty && prompt && !editing) {
+  } else if (empty && prompt && !editing && !autoFocus) {
     body = (
-      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          className="cursor-text rounded-sm text-left text-muted-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          {prompt}
-        </button>
-        {canConfirm(sectionKey) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => confirmNoRemarks(sectionKey)}
-            className="relative h-7 rounded-md border-dashed border-foreground/25 px-2.5 text-[13px] font-normal text-muted-foreground max-sm:before:absolute max-sm:before:inset-x-0 max-sm:before:-inset-y-2"
-          >
-            Bez uwag
-          </Button>
-        )}
-      </div>
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="cursor-text rounded-sm text-left text-muted-foreground/65 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        {prompt}
+      </button>
     )
   } else {
     body = (
@@ -92,12 +83,25 @@ export function SectionBlock({ sectionKey, readOnly, autoFocus, className }: Sec
 
   return (
     <section id={`section-${sectionKey}`} aria-labelledby={headingId} className={cn('scroll-mt-6', className)}>
-      <h3 id={headingId} className="mb-0.5 text-lg font-semibold text-foreground">
-        {label}
-      </h3>
+      <div className="mb-2 flex min-h-7 items-center justify-between gap-3">
+        <h3 id={headingId} className="text-lg font-semibold text-foreground">
+          {label}
+        </h3>
+        {confirmable && !editing && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => confirmNoRemarks(sectionKey)}
+            className="relative h-7 gap-1.5 rounded-md border-dashed border-foreground/25 px-2.5 text-[13px] font-normal text-muted-foreground max-sm:before:absolute max-sm:before:inset-x-0 max-sm:before:-inset-y-2"
+          >
+            <CheckIcon aria-hidden className="size-3.5" />
+            Bez uwag
+          </Button>
+        )}
+      </div>
       {body}
       {chips.length > 0 && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
           {chips.map((g) => (
             <GapChip key={g.id} gap={g} readOnly={readOnly} />
           ))}

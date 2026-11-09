@@ -3,7 +3,7 @@
 import { cn } from 'cn'
 import { XIcon } from 'lucide-react'
 import { useId, useState } from 'react'
-import { toast } from 'sonner'
+import { submitFromReport } from './report-note'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -66,7 +66,6 @@ export function GapChip({ gap, readOnly }: { gap: DerivedGap; readOnly: boolean 
 }
 
 function GapAnswer({ gap, onDone }: { gap: DerivedGap; onDone(): void }) {
-  const submitNote = useShift((s) => s.submitNote)
   const [answer, setAnswer] = useState(gap.suggestion?.value ?? '')
   const inputId = useId()
 
@@ -77,8 +76,7 @@ function GapAnswer({ gap, onDone }: { gap: DerivedGap; onDone(): void }) {
         e.preventDefault()
         const text = answer.trim()
         if (!text) return
-        void submitNote(text, [], { answersGapId: gap.id })
-        toast('Dodano do dziennika')
+        submitFromReport(text, [], { answersGapId: gap.id })
         onDone()
       }}
     >

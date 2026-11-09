@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { requiredCount } from '@/lib/report/gaps'
-import { formatHHMM } from '@/lib/report/time'
+import { formatDayTime } from '@/lib/report/time'
 import { useShift } from '@/store/shift'
 import { DemoMenu } from './demo-menu'
 
@@ -17,6 +17,9 @@ export type AppHeaderProps = {
 function ShiftStatus() {
   const startedAt = useShift((s) => s.shift.startedAt)
   const sentAt = useShift((s) => s.shift.sentAt)
+  // "Pon 9 lis, 19:41"; phones drop the weekday so the primary button fits next to it.
+  const [weekday, ...rest] = formatDayTime(startedAt).split(' ')
+  const dayTime = rest.join(' ')
   return (
     <span className="inline-flex items-center gap-1.5 text-[13px] whitespace-nowrap text-muted-foreground">
       <span aria-hidden className={sentAt ? 'size-1.5 rounded-full bg-muted-foreground' : 'size-1.5 rounded-full bg-emerald-400'} />
@@ -28,8 +31,8 @@ function ShiftStatus() {
         </>
       ) : (
         <>
-          <span className="max-sm:hidden">Zmiana trwa · </span>
-          {`od ${formatHHMM(startedAt)}`}
+          <span className="max-sm:hidden">Zmiana trwa · {weekday} </span>
+          {dayTime}
         </>
       )}
     </span>
@@ -53,7 +56,7 @@ function ShiftTabs() {
         Raport
         {required > 0 && (
           <Badge
-            className="h-[18px] min-w-[18px] border-required-border bg-required-bg px-1.5 text-[11px] font-semibold text-required"
+            className="h-[18px] min-w-[18px] justify-center border-required-border bg-required-bg px-1 text-[11px] font-semibold text-required tabular-nums"
           >
             {required}
             <span className="sr-only"> do uzupełnienia</span>

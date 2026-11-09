@@ -1,7 +1,7 @@
 import type { AiContext } from '@/lib/ai/client'
 import type { Operation } from '@/lib/report/operations'
 import { normalizeForSearch } from '@/lib/report/search'
-import { parseHHMM } from '@/lib/report/time'
+import { estimateVagueTime, parseHHMM } from '@/lib/report/time'
 import type { EventTime, Note } from '@/lib/report/types'
 
 /** Keyword heuristics on normalized text (lowercase, no diacritics), checked in order (spec §6.4). */
@@ -37,8 +37,6 @@ function firstTime(text: string): string | null {
 
 /**
  * Scripted operations used when Gemini fails; null when nothing matches (the note then becomes `failed`).
- * A reply to an AI question never fails: "Tak…" files the original note as an "Inne" incident, anything
- * else returns [] so the question resolves and the reply is processed.
  */
 export function fallbackOperations(note: Note, context: AiContext): Operation[] | null {
   const gap = context.answeringGap
@@ -51,16 +49,15 @@ export function fallbackOperations(note: Note, context: AiContext): Operation[] 
     return ops
   }
 
-  if (note.replyTo) {
-    const q = context.answeringQuestion
-    if (!q || !/^tak\b/.test(normalizeForSearch(note.text).trim())) return []
-    return [{ op: 'addIncident', type: 'Inne', time: { hhmm: q.noteHHMM, approx: true }, description: q.noteText }]
-  }
-
   const normalized = normalizeForSearch(note.text)
   const match = KEYWORD_TYPES.find(([re]) => re.test(normalized))
   if (!match) return null
   const hhmm = firstTime(note.text)
-  const time: EventTime = hhmm ? { hhmm, approx: false } : { hhmm: context.noteHHMM, approx: true }
-  return [{ op: 'addIncident', type: match[1], time, description: note.text }]
+  const vague = hhmm ? null : estimateVagueTime(note.text, context.startHHMM)
+  const time: EventTime | undefined = hhmm
+    ? { hhmm, approx: false }
+    : vague
+      ? { hhmm: vague.hhmm, approx: true, sourcePhrase: vague.phrase }
+      : undefined
+  return [{ op: 'addIncident', type: match[1], ...(time ? { time } : {}), description: note.text }]
 }

@@ -1,18 +1,22 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { CheckIcon } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { fieldGap, openGaps, type DerivedGap } from '@/lib/report/gaps'
 import { sortIncidents } from '@/lib/report/operations'
 import { formatHHMM } from '@/lib/report/time'
+import type { Incident } from '@/lib/report/types'
 import { useShift } from '@/store/shift'
 import { IncidentBlock } from './incident-block'
 
 const HEADING_ID = 'incidents-label'
 
 /**
- * The Incydenty part of the report (spec §4.4): the heading row with "+ Dodaj incydent", then
- * the incident blocks in time order, or the "Brak incydentów" confirmation when there are none.
+ * The Incydenty part of the report (spec §4.4): the heading row, then the incident blocks in time
+ * order. With incidents, "+ Dodaj incydent" sits on the right of the heading. Without any, the
+ * section looks like the others: "✓ Brak zdarzeń" on the right confirms it, and "Dodaj incydent" (dotted underline)
+ * follows the empty-state text inline.
  */
 export function Incidents() {
   const shift = useShift((s) => s.shift)
@@ -35,6 +39,7 @@ export function Incidents() {
     return map
   }, [shift])
   const startHHMM = formatHHMM(shift.startedAt)
+  const moved = useMovedIncidents(incidents)
 
   let body
   if (incidents.length > 0) {
@@ -53,6 +58,7 @@ export function Incidents() {
             }}
             chips={chipsByIncident.get(inc.id) ?? []}
             readOnly={readOnly}
+            moved={moved.has(inc.id)}
             autoFocus={inc.id === added}
             // Only for that first mount: a remount (e.g. "Cofnij" after removing it) must not reopen it.
             onAutoFocused={() => setAdded(null)}
@@ -64,45 +70,91 @@ export function Incidents() {
     body = <p>Brak incydentów w trakcie zmiany.</p>
   } else {
     body = (
-      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-        <p className="text-muted-foreground">
-          Nie zgłoszono żadnych incydentów.
-          {/* Sent without the required confirmation. */}
-          {readOnly && <span className="text-required"> — brak danych</span>}
-        </p>
+      <p className="text-muted-foreground">
+        Nie zgłoszono żadnych incydentów.
+        {/* Sent without the required confirmation. */}
+        {readOnly && <span className="text-required"> — brak danych</span>}
         {!readOnly && (
+          <>
+            {' '}
+            <Button
+              variant="link"
+              onClick={() => setAdded(addEmptyIncident())}
+              className="relative h-auto rounded-none border-0 border-b border-dotted border-b-foreground/40 p-0 align-baseline text-[15px] leading-tight font-normal text-foreground/80 no-underline before:absolute before:-inset-x-1 before:-inset-y-2.5 hover:border-b-foreground hover:text-foreground hover:no-underline"
+            >
+              Dodaj incydent
+            </Button>
+          </>
+        )}
+      </p>
+    )
+  }
+
+  // No incidents yet: the heading offers the confirmation, like "Bez uwag" on the other sections.
+  const confirmable = !readOnly && incidents.length === 0 && !shift.noIncidentsConfirmed
+
+  return (
+    <section id="incidents" aria-labelledby={HEADING_ID} className="mt-10 scroll-mt-6">
+      <div className="mb-2 flex min-h-7 items-center justify-between gap-3">
+        <h3 id={HEADING_ID} className="text-lg font-semibold text-foreground">
+          Incydenty
+        </h3>
+        {confirmable ? (
           <Button
             variant="ghost"
             size="sm"
             onClick={confirmNoIncidents}
             data-gap-focus="no-incidents"
-            className="relative h-7 rounded-md border-required-border bg-required-bg px-2.5 text-[13px] font-medium text-required hover:border-required hover:bg-required-bg hover:text-required dark:hover:bg-required-bg max-sm:before:absolute max-sm:before:inset-x-0 max-sm:before:-inset-y-2"
+            className="relative h-7 gap-1.5 rounded-md border-dashed border-foreground/25 px-2.5 text-[13px] font-normal text-muted-foreground max-sm:before:absolute max-sm:before:inset-x-0 max-sm:before:-inset-y-2"
           >
-            Potwierdź: brak incydentów
+            <CheckIcon aria-hidden className="size-3.5" />
+            Brak zdarzeń
           </Button>
-        )}
-      </div>
-    )
-  }
-
-  return (
-    <section id="incidents" aria-labelledby={HEADING_ID} className="mt-5 scroll-mt-6">
-      <div className="mb-1.5 flex items-center justify-between gap-3">
-        <h3 id={HEADING_ID} className="text-lg font-semibold text-foreground">
-          Incydenty
-        </h3>
-        {!readOnly && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setAdded(addEmptyIncident())}
-            className="relative -my-1 h-7 px-2 text-[13px] font-normal text-muted-foreground max-sm:before:absolute max-sm:before:inset-x-0 max-sm:before:-inset-y-2"
-          >
-            + Dodaj incydent
-          </Button>
+        ) : (
+          !readOnly && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setAdded(addEmptyIncident())}
+              className="relative -my-1 h-7 px-2 text-[13px] font-normal text-muted-foreground max-sm:before:absolute max-sm:before:inset-x-0 max-sm:before:-inset-y-2"
+            >
+              + Dodaj incydent
+            </Button>
+          )
         )}
       </div>
       {body}
     </section>
   )
+}
+
+/**
+ * Incidents are numbered by event time, so a new or changed time can move one to another place
+ * (#3 becomes #1). Returns the ids that just moved because their own time changed, for a short
+ * highlight; incidents only pushed along by that move are not highlighted.
+ */
+function useMovedIncidents(incidents: Incident[]): Set<string> {
+  const prev = useRef<Map<string, { index: number; time: string }> | null>(null)
+  const [moved, setMoved] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    const before = prev.current
+    const now = new Map(incidents.map((inc, index) => [inc.id, { index, time: JSON.stringify(inc.time?.value ?? null) }]))
+    prev.current = now
+    if (!before) return
+    const ids = [...now].filter(([id, cur]) => {
+      const old = before.get(id)
+      return old !== undefined && old.index !== cur.index && old.time !== cur.time
+    }).map(([id]) => id)
+    if (ids.length === 0) return
+    setMoved(new Set(ids))
+    // Keep it in sight after the jump.
+    requestAnimationFrame(() =>
+      document.getElementById(`incident-${ids[0]}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }),
+    )
+    const t = setTimeout(() => setMoved(new Set()), 1900)
+    return () => clearTimeout(t)
+  }, [incidents])
+
+  return moved
 }

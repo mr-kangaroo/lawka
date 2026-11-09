@@ -21,7 +21,6 @@ const context = (extra: Partial<AiContext> = {}): AiContext => ({
   incidents: [],
   sections: [],
   openGaps: [],
-  openQuestions: [],
   ...extra,
 })
 
@@ -50,16 +49,10 @@ describe('fallbackOperations', () => {
     ])
   })
 
-  it('fallback uses context.noteHHMM (never the server clock) with approx: true when there is no time token', () => {
-    // createdAt says 23:20 local; the client-computed noteHHMM wins.
+  it('fallback leaves the time empty when the note names no hour (never the note or server time)', () => {
     const ops = fallbackOperations(note('Ktoś zasłabł na parkiecie, wezwana karetka'), context({ noteHHMM: '00:47' }))
     expect(ops).toEqual([
-      {
-        op: 'addIncident',
-        type: 'Zasłabnięcie / pomoc medyczna',
-        time: { hhmm: '00:47', approx: true },
-        description: 'Ktoś zasłabł na parkiecie, wezwana karetka',
-      },
+      { op: 'addIncident', type: 'Zasłabnięcie / pomoc medyczna', description: 'Ktoś zasłabł na parkiecie, wezwana karetka' },
     ])
   })
 
@@ -98,32 +91,9 @@ describe('fallbackOperations', () => {
     ])
   })
 
-  const answeringQuestion = {
-    id: 'q1',
-    question: 'Nie jestem pewien, co się stało przy szatni. Czy to był incydent?',
-    options: ['Tak, zapisz jako incydent', 'Nie, tylko informacja'],
-    noteText: 'znowu ten typ z wczoraj przy szatni, ogarnięte',
-    noteHHMM: '01:48',
-  }
-
-  it('fallback: "Nie, tylko informacja" returns []', () => {
-    const reply = note('Nie, tylko informacja', { replyTo: 'q1' })
-    expect(fallbackOperations(reply, context({ answeringQuestion }))).toEqual([])
-    // A reply never fails, even without the question in context.
-    expect(fallbackOperations(note('tak', { replyTo: 'q1' }), context())).toEqual([])
-    // "takie..." is not a yes.
-    expect(fallbackOperations(note('takie tam', { replyTo: 'q1' }), context({ answeringQuestion }))).toEqual([])
-  })
-
-  it('fallback: "Tak, zapisz jako incydent" creates an incident from the original note', () => {
-    const reply = note('Tak, zapisz jako incydent', { replyTo: 'q1' })
-    expect(fallbackOperations(reply, context({ answeringQuestion, noteHHMM: '02:10' }))).toEqual([
-      {
-        op: 'addIncident',
-        type: 'Inne',
-        time: { hhmm: '01:48', approx: true },
-        description: 'znowu ten typ z wczoraj przy szatni, ogarnięte',
-      },
+  it('a vague time in the note is estimated from its phrase', () => {
+    expect(fallbackOperations(note('po 1 bójka przy barze'), context())).toEqual([
+      { op: 'addIncident', type: 'Bójka', time: { hhmm: '01:30', approx: true, sourcePhrase: 'po 1' }, description: 'po 1 bójka przy barze' },
     ])
   })
 
@@ -138,14 +108,11 @@ describe('fallbackOperations', () => {
     }
   })
 
-  it('"awantura, 300 zł szkody" uses noteHHMM with approx', () => {
+  it('"awantura, 300 zł szkody" has no time: bare numbers are never read as times', () => {
     expect(fallbackOperations(note('awantura, 300 zł szkody'), context({ noteHHMM: '01:12' }))).toEqual([
-      { op: 'addIncident', type: 'Bójka', time: { hhmm: '01:12', approx: true }, description: 'awantura, 300 zł szkody' },
+      { op: 'addIncident', type: 'Bójka', description: 'awantura, 300 zł szkody' },
     ])
-    // Bare numbers like "12 osób" or "2026" are never read as times.
-    expect(fallbackOperations(note('awantura 12 osób, rok 2026'), context({ noteHHMM: '01:12' }))?.[0]).toMatchObject({
-      time: { hhmm: '01:12', approx: true },
-    })
+    expect(fallbackOperations(note('awantura 12 osób, rok 2026'), context({ noteHHMM: '01:12' }))?.[0]).not.toHaveProperty('time')
   })
 
   it('unrelated text returns null', () => {

@@ -20,13 +20,14 @@ export type AiContext = {
     location?: string
     description: string
     managerFields: string[]
+    /** Not yet confirmed by the manager as an incident. */
+    suspected?: boolean
   }>
   sections: Array<{ key: SectionKey; text: string; hasManagerBlocks: boolean }>
   openGaps: GapRef[]
-  openQuestions: Array<{ id: string; question: string }>
   answeringGap?: GapRef
-  /** The note replies to an AI question card; noteText/noteHHMM are the original note the question is about. */
-  answeringQuestion?: { id: string; question: string; options: string[]; noteText: string; noteHHMM: string }
+  /** The manager edited this note; it was filed before as `previousText` (into `incidentIds`, if any). */
+  editing?: { previousText: string; incidentIds: string[] }
 }
 
 const toRef = (g: Pick<DerivedGap, 'id' | 'question' | 'target'>): GapRef => ({
@@ -51,6 +52,7 @@ export function buildContext(shift: Shift, note: Note, now: Date): AiContext {
       ...(inc.location ? { location: inc.location.value } : {}),
       description: inc.description ? docToPlainText(inc.description) : '',
       managerFields,
+      ...(inc.suspected ? { suspected: true } : {}),
     }
   })
   const sections = Object.values(shift.sections).map((s) => ({
@@ -65,20 +67,6 @@ export function buildContext(shift: Shift, note: Note, now: Date): AiContext {
     const found = ai ?? open.find((g) => g.id === note.answersGapId)
     if (found) answeringGap = toRef(found)
   }
-  let answeringQuestion: AiContext['answeringQuestion']
-  if (note.replyTo) {
-    const q = shift.questions.find((x) => x.id === note.replyTo)
-    const original = q && shift.notes.find((n) => n.id === q.noteId)
-    if (q && original) {
-      answeringQuestion = {
-        id: q.id,
-        question: q.question,
-        options: q.options,
-        noteText: original.text,
-        noteHHMM: formatHHMM(original.createdAt),
-      }
-    }
-  }
   return {
     shiftDate: shift.date,
     startHHMM: formatHHMM(shift.startedAt),
@@ -87,9 +75,17 @@ export function buildContext(shift: Shift, note: Note, now: Date): AiContext {
     incidents,
     sections,
     openGaps: open.map(toRef),
-    openQuestions: shift.questions.filter((q) => q.status === 'open').map((q) => ({ id: q.id, question: q.question })),
     ...(answeringGap ? { answeringGap } : {}),
-    ...(answeringQuestion ? { answeringQuestion } : {}),
+    ...(note.editedFrom !== undefined
+      ? {
+          editing: {
+            previousText: note.editedFrom,
+            incidentIds: note.routedTo
+              .filter((t) => t.kind === 'incident' && shift.incidents.some((i) => i.id === t.incidentId))
+              .map((t) => (t as { incidentId: string }).incidentId),
+          },
+        }
+      : {}),
   }
 }
 

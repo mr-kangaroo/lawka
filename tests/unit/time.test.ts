@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatHHMM, minutesFromShiftStart, parseHHMM, timeSlots } from '@/lib/report/time'
+import { estimateVagueTime, formatDayTime, formatHHMM, minutesFromShiftStart, parseHHMM, timeSlots } from '@/lib/report/time'
 
 describe('parseHHMM', () => {
   it('normalizes accepted formats', () => {
@@ -58,5 +58,41 @@ describe('timeSlots', () => {
   it('handles a start right before midnight', () => {
     const slots = timeSlots('23:58')
     expect(slots.slice(0, 3)).toEqual(['23:55', '00:00', '00:05'])
+  })
+})
+
+describe('estimateVagueTime', () => {
+  const est = (text: string, start = '20:00') => estimateVagueTime(text, start)
+
+  it('reads "po N" as half past N, after the shift start', () => {
+    expect(est('po 1, ochroniarz wyrzucił 3 gości')).toEqual({ phrase: 'po 1', hhmm: '01:30' })
+    expect(est('po 9 awantura')).toEqual({ phrase: 'po 9', hhmm: '21:30' })
+    expect(est('po 1', '18:35')).toEqual({ phrase: 'po 1', hhmm: '01:30' })
+    expect(est('po 12')).toEqual({ phrase: 'po 12', hhmm: '00:30' })
+  })
+
+  it('reads "koło/około N" as N:00 and keeps the phrase as written', () => {
+    expect(est('Koło 1 dziewczyna zasłabła')).toEqual({ phrase: 'Koło 1', hhmm: '01:00' })
+    expect(est('około 23:30 bójka')).toEqual({ phrase: 'około 23:30', hhmm: '23:30' })
+  })
+
+  it('reads "przed N" and midnight phrases', () => {
+    expect(est('przed 2 ktoś zasłabł')).toEqual({ phrase: 'przed 2', hhmm: '01:45' })
+    expect(est('tuż przed północą')).toEqual({ phrase: 'przed północą', hhmm: '23:45' })
+    expect(est('po północy')).toEqual({ phrase: 'po północy', hhmm: '00:30' })
+  })
+
+  it('ignores text without a vague time phrase', () => {
+    expect(est('chwilę temu kłótnia')).toBeNull()
+    expect(est('po 300 zł rachunku')).toBeNull()
+    expect(est('pobił kolegę')).toBeNull()
+  })
+})
+
+describe('formatDayTime', () => {
+  it('formats the local weekday, day, month and time', () => {
+    expect(formatDayTime(new Date(2026, 10, 9, 19, 41).toISOString())).toBe('Pon 9 lis, 19:41')
+    expect(formatDayTime(new Date(2026, 10, 8, 20, 0).toISOString())).toBe('Ndz 8 lis, 20:00')
+    expect(formatDayTime(new Date(2026, 9, 14, 7, 5).toISOString())).toBe('Śr 14 paź, 07:05')
   })
 })

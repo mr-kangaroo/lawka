@@ -7,13 +7,13 @@ describe('jumpTargetFor', () => {
     expect(t.elementId).toBe('incident-i2')
     expect(t.focus).toContain('Godzina zdarzenia')
   })
-  it('maps an incident gap without a field to the incident only', () => {
-    expect(jumpTargetFor({ kind: 'incident', incidentId: 'i2' })).toEqual({ elementId: 'incident-i2' })
+  it('maps an incident gap without a field to the incident (its "Tak" button when unconfirmed)', () => {
+    expect(jumpTargetFor({ kind: 'incident', incidentId: 'i2' })).toEqual({ elementId: 'incident-i2', focus: '[data-gap-focus="suspected"]' })
   })
   it('maps a section gap to its section', () => {
     expect(jumpTargetFor({ kind: 'section', key: 'security' }).elementId).toBe('section-security')
   })
-  it('maps the report-level gap to the "Potwierdź: brak incydentów" button', () => {
+  it('maps the report-level gap to the "Brak zdarzeń" button', () => {
     expect(jumpTargetFor({ kind: 'report' })).toEqual({ elementId: 'incidents', focus: '[data-gap-focus="no-incidents"]' })
   })
 })
