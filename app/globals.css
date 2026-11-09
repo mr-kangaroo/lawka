@@ -146,3 +146,15 @@
   pointer-events: none;
   color: color-mix(in oklab, var(--muted-foreground) 65%, transparent);
 }
+
+/* An incident whose time moved it to a new place in the list: a short ring that fades out. */
+@keyframes incident-moved {
+  0%, 35% { box-shadow: 0 0 0 2px var(--ring); }
+  100% { box-shadow: 0 0 0 2px transparent; }
+}
+.incident-moved {
+  animation: incident-moved 1.8s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .incident-moved { animation-duration: 0.01s; }
+}

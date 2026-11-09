@@ -39,6 +39,8 @@ export type IncidentBlockProps = {
   /** AI question gaps for this incident without a field, shown as chips. */
   chips: DerivedGap[]
   readOnly: boolean
+  /** Its time just moved it to another place in the list: flash a ring once. */
+  moved?: boolean
   /** An incident just added by hand: scroll to it and open its type picker. */
   autoFocus?: boolean
   /** Called once `autoFocus` has been applied on mount. */
@@ -56,6 +58,7 @@ export function IncidentBlock({
   fieldGaps,
   chips,
   readOnly,
+  moved,
   autoFocus,
   onAutoFocused,
 }: IncidentBlockProps) {
@@ -109,6 +112,7 @@ export function IncidentBlock({
       className={cn(
         'group/incident flex scroll-mt-6 flex-col gap-1.5 rounded-[10px] border bg-card/40 px-3.5 py-3 text-sm leading-[1.55]',
         suspected && 'border-dashed border-required-border',
+        moved && 'incident-moved',
       )}
     >
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">

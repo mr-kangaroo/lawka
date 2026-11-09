@@ -134,7 +134,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
     - Marek Dąbrowski, Szef ochrony (head of security)
 
 ### 4.4 Report: incidents
-- Shown under **Incydenty** as bordered blocks, in time order. The display number (#1, #2, …) follows the order on screen.
+- Shown under **Incydenty** as bordered blocks, in time order. The display number (#1, #2, …) follows the order on screen. An incident whose own time change moves it to another place gets a short ring (about 2 s) and is scrolled into view, so the renumbering is visible; incidents only pushed along are not highlighted.
 - **Header row:** a sentence-like line, **`#1 Bójka · 22:40 · Bar główny`**. Each value is **plain inline text with a subtle dashed underline**, with no boxes, borders or chevrons, so the block reads like part of the document rather than a form. Clicking a value opens its picker in a popover. Empty values show a muted placeholder ("typ", "godzina", "miejsce", for type, time and place) with the same underline.
   - **Type:** opens a popover with a **search field at the top**. Typing filters a predefined list with the matches in bold. The last option is always "+ Użyj „<query>" jako własnego typu" (use the query as a custom type). Predefined types:
     - Bójka (fight)

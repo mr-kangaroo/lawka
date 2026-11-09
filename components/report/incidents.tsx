@@ -1,11 +1,12 @@
 'use client'
 
 import { CheckIcon } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { fieldGap, openGaps, type DerivedGap } from '@/lib/report/gaps'
 import { sortIncidents } from '@/lib/report/operations'
 import { formatHHMM } from '@/lib/report/time'
+import type { Incident } from '@/lib/report/types'
 import { useShift } from '@/store/shift'
 import { IncidentBlock } from './incident-block'
 
@@ -38,6 +39,7 @@ export function Incidents() {
     return map
   }, [shift])
   const startHHMM = formatHHMM(shift.startedAt)
+  const moved = useMovedIncidents(incidents)
 
   let body
   if (incidents.length > 0) {
@@ -56,6 +58,7 @@ export function Incidents() {
             }}
             chips={chipsByIncident.get(inc.id) ?? []}
             readOnly={readOnly}
+            moved={moved.has(inc.id)}
             autoFocus={inc.id === added}
             // Only for that first mount: a remount (e.g. "Cofnij" after removing it) must not reopen it.
             onAutoFocused={() => setAdded(null)}
@@ -123,4 +126,35 @@ export function Incidents() {
       {body}
     </section>
   )
+}
+
+/**
+ * Incidents are numbered by event time, so a new or changed time can move one to another place
+ * (#3 becomes #1). Returns the ids that just moved because their own time changed, for a short
+ * highlight; incidents only pushed along by that move are not highlighted.
+ */
+function useMovedIncidents(incidents: Incident[]): Set<string> {
+  const prev = useRef<Map<string, { index: number; time: string }> | null>(null)
+  const [moved, setMoved] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    const before = prev.current
+    const now = new Map(incidents.map((inc, index) => [inc.id, { index, time: JSON.stringify(inc.time?.value ?? null) }]))
+    prev.current = now
+    if (!before) return
+    const ids = [...now].filter(([id, cur]) => {
+      const old = before.get(id)
+      return old !== undefined && old.index !== cur.index && old.time !== cur.time
+    }).map(([id]) => id)
+    if (ids.length === 0) return
+    setMoved(new Set(ids))
+    // Keep it in sight after the jump.
+    requestAnimationFrame(() =>
+      document.getElementById(`incident-${ids[0]}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }),
+    )
+    const t = setTimeout(() => setMoved(new Set()), 1900)
+    return () => clearTimeout(t)
+  }, [incidents])
+
+  return moved
 }
