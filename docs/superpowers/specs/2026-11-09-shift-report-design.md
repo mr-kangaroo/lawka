@@ -50,6 +50,7 @@ The brief covers **creating one report only**. Reading, collecting, listing or e
 | D14 | **No backend.** State lives in localStorage. | 8-hour timebox. Refresh-safe at 3 a.m. |
 | D15 | **Neutral shadcn theme, dark-first.** No branding. | Brief constraint. Design effort goes into the flow. |
 | D16 | **No voice dictation.** | Dropped to pay for the editor work. Listed under "what's next". |
+| D17 | **Five fixed sections, always shown:** Podsumowanie, Incydenty, Publiczność i bezpieczeństwo, Ochrona, Usterki i sprzęt. **The other eight appear only when relevant.** An empty fixed section is confirmed explicitly ("Bez uwag", nothing to report). **"Brak incydentów" (no incidents) is a required confirmation.** | In evidence, "nothing happened" is a fact. An explicitly confirmed empty section is worth more than a missing one. |
 
 ---
 
@@ -63,7 +64,7 @@ The brief covers **creating one report only**. Reading, collecting, listing or e
   - Fixed title, shift-date picker and author picker.
   - Incidents as structured blocks: searchable type, time picker, place picker, a rich-text description, attachments, gap chips, a hover menu with duplicate/remove, and "+ Dodaj incydent".
   - Sections with rich text.
-  - A box suggesting sections not yet mentioned.
+  - Five fixed sections with "Bez uwag" confirmations, conditional sections, and "+ Dodaj sekcję".
 - AI processing of notes into operations, plus follow-up questions.
 - Gap indicators, the header count and answering gaps in place.
 - Close flow: review dialog → "close anyway" → locked report with the closing time.
@@ -97,8 +98,8 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 │   │ [ …albo dopisz, co się stało ]│ │ ┌ #1 Bójka · 22:40 · Bar główny  (dotted underlines)   dodano o 22:41 ┐ │
 │   └──────────────────────────────┘  │ │ description · Q—A lines · [IMG] · gap chips                      │ │
 │ 02:52 note  ⟳ porządkuję…           │ └──────────────────────────────────────────────────────────────────┘ │
-│ ┌ Nowa notatka…     📎 [Dodaj ↵] ┐  │ └───────────────────────────────┘   │ Publiczność / Imprezy prywatne / Usterki i sprzęt … (rich text)      │
-│                                     │ ┌ ✦ Nic jeszcze o ochronie… [+ Ochrona] [+ Bar] [Zamknij] ┐         │
+│ ┌ Nowa notatka…     📎 [Dodaj ↵] ┐  │ └───────────────────────────────┘   │ Publiczność i bezp. / Ochrona [Bez uwag] / Usterki / Imprezy pryw.   │
+│                                     │ + Dodaj sekcję                                                      │
 └─────────────────────────────────────┴────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -163,11 +164,18 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 - **"+ Dodaj incydent"** (add incident) is a quiet text button **to the right of the "Incydenty" heading**. Most incidents arrive through notes and the AI, so manual adding is secondary. It adds an empty incident whose four required fields immediately show as field gaps.
 
 ### 4.5 Report: sections
-- Fixed headings in the brief's order. **A section appears only when it has content.** Podsumowanie (summary) always appears once there's anything to summarise.
+- **Fixed sections, always shown, in this order:**
+  1. **Podsumowanie** (summary): drafted by the AI.
+  2. **Incydenty** (incidents): when there are none, it shows "Nie zgłoszono żadnych incydentów." (no incidents reported) and an amber **[Potwierdź: brak incydentów]** (confirm: no incidents) button. This is a **required** gap until clicked. Clicking writes "Brak incydentów w trakcie zmiany." (no incidents during the shift) as a manager-authored line. Adding an incident later removes that line.
+  3. **Publiczność i bezpieczeństwo** (audience and safety): crowd size, queues, crowding, safety concerns.
+  4. **Ochrona** (security)
+  5. **Usterki i sprzęt** (faults and equipment)
+- **An empty fixed section** (3–5) shows a muted prompt ("Co z ochroną? Napisz w notatce albo potwierdź.", what about security? write a note or confirm) and a dashed **[Bez uwag]** button. Until it's filled or confirmed, it's an **optional** gap counted in "warto dodać". Clicking writes "Bez uwag." as a manager-authored line.
+- **Conditional sections** (in the brief's order, after the fixed ones): Ocena bramkarzy (door staff rating), Artyści i ekipa (artists and crew), Produkcja / przebieg / otwarcie drzwi (production, running order, door opening), Bar, Kuchnia (kitchen), Dostawcy zewnętrzni (external suppliers), Imprezy prywatne (private events), Stany magazynowe (stock).
+  - They appear when the AI files content there, or when the manager adds them.
+  - Ocena bramkarzy stays separate from Ochrona, as in the brief.
 - The text inside a section is a Tiptap editor (paragraphs, **bold**, *italic*, bullet lists). Click anywhere to type. **No toolbar.** Formatting uses keyboard shortcuts only: **⌘/Ctrl+B** for bold, **⌘/Ctrl+I** for italic, and typing **"- "** or **"* "** at the start of a line (or **⌘/Ctrl+Shift+8**) for a bullet list. These are Tiptap's defaults, so there's no custom code. There are **no heading controls**, because headings are structure.
-- **The suggestions box** sits at the end of the report and is dashed, not part of the report content. It names key sections that haven't been mentioned ("Nic jeszcze o ochronie, barze i stanach magazynowych", nothing yet on security, bar or stock):
-  - "+ Ochrona" (security) / "+ Bar" / "+ Stany magazynowe" (stock) add that section with the cursor in it.
-  - "Zamknij" dismisses the box for this shift.
+- **"+ Dodaj sekcję"** (add section) is a quiet text button at the end of the report. It opens a menu of the conditional sections not yet present, and the chosen one appears with the cursor in it. It replaces the earlier AI suggestions box, which fixed sections made redundant.
 
 ### 4.6 Gaps
 - **Field gaps** (missing or estimated type, time, place or description, from the rule in §6.3) are shown **on the field itself**, not as chips: an amber placeholder ("godzina", "miejsce", …) or the amber `? 01:00`, each with an explanatory tooltip. They still count toward "N wymagane".
@@ -248,7 +256,7 @@ type RichBlock =
   | { type: 'bulletList'; attrs: BlockAttrs; content: { type: 'listItem'; content: { type: 'paragraph'; content?: RichInline[] }[] }[] }
 type RichInline = { type: 'text'; text: string; marks?: { type: 'bold' | 'italic' }[] }
 type RichDoc = { type: 'doc'; content: RichBlock[] }
-type Section = { key: SectionKey; doc: RichDoc; attachments: Attachment[] }
+type Section = { key: SectionKey; doc: RichDoc; attachments: Attachment[] }   // "Bez uwag" = a manager block with that text
 
 type GapTarget =
   | { kind: 'incident'; incidentId: string; field?: 'type' | 'time' | 'location' | 'description' }
@@ -276,7 +284,7 @@ type Shift = {
   sections: Partial<Record<SectionKey, Section>>
   gaps: Gap[]
   questions: AiQuestion[]
-  suggestionsDismissed: boolean
+  noIncidentsConfirmed: boolean            // "Brak incydentów" clicked
 }
 ```
 
@@ -328,6 +336,10 @@ type Operation =
 - "Opis zdarzenia?" (description of the event?)
 - "Dokładna godzina?" (exact time?)
 
+Plus report-level rule gaps:
+- **required:** no incidents and `!noIncidentsConfirmed` → "Potwierdź: brak incydentów" (confirm: no incidents).
+- **optional:** each empty fixed section (audience, security, maintenance) → shown as the section's own prompt and [Bez uwag], not as a chip.
+
 ### 6.4 Prompt and fallback
 - **System prompt** (English instructions, Polish output). It covers:
   - the section keys with descriptions
@@ -371,7 +383,7 @@ components/
   shift/     Header, CloseDialog, ClosedBanner
   notes/     Feed, NoteItem, AiQuestion, Composer
   report/    ReportPanel, ReportHeader (date, author), IncidentBlock, TypeCombobox,
-             TimePicker, PlacePicker, IncidentMenu, SectionEditor, GapChip, Suggestions
+             TimePicker, PlacePicker, IncidentMenu, SectionEditor, GapChip, AddSectionMenu
 tests/unit  tests/e2e
 ```
 
@@ -430,11 +442,10 @@ tests/unit  tests/e2e
 | E2E, polish, README | ~0:45 |
 
 **Cut line, if behind, in this order:**
-1. The suggestions box.
-2. Duplicate (keep remove with undo).
-3. Pre-filled AI suggestions in question-gap popovers (keep an empty answer field).
-4. Phone tabs (keep a stacked layout).
-5. The time picker dropdown (keep a plain HH:MM input).
+1. Duplicate (keep remove with undo).
+2. Pre-filled AI suggestions in question-gap popovers (keep an empty answer field).
+3. Phone tabs (keep a stacked layout).
+4. The time picker dropdown (keep a plain HH:MM input).
 
 ---
 
