@@ -71,6 +71,68 @@ describe('store', () => {
     expect(useShift.getState().shift.notes[0].status).toBe('failed')
   })
 
+  it('editNote replaces what the note wrote, tells the AI about the edit, and keeps its incident', async () => {
+    const { useShift, req } = await load()
+    req.mockResolvedValueOnce({
+      operations: [
+        { op: 'addIncident', type: 'Bójka', description: 'Bójka przy barze.' },
+        { op: 'appendToSection', key: 'bar', paragraphs: ['Kolejka przy barze.'] },
+      ],
+      source: 'ai',
+    })
+    await useShift.getState().submitNote('bójka przy barze, kolejka', [])
+    const id = useShift.getState().shift.notes[0].id
+    const incidentId = useShift.getState().shift.incidents[0].id
+    req.mockResolvedValueOnce({
+      operations: [
+        { op: 'updateIncident', incidentId, location: 'Bar główny' },
+        { op: 'appendToIncident', incidentId, text: 'Bójka przy barze głównym.' },
+      ],
+      source: 'ai',
+    })
+    await useShift.getState().editNote(id, 'bójka przy barze głównym')
+    const ctx = req.mock.calls[1][1]
+    expect(ctx.editing).toEqual({ previousText: 'bójka przy barze, kolejka', incidentIds: [incidentId] })
+    expect(ctx.sections.find((x) => x.key === 'bar')?.text).toBe('')
+    const s = useShift.getState().shift
+    expect(s.incidents).toHaveLength(1)
+    expect(docToPlainText(s.incidents[0].description!)).toBe('Bójka przy barze głównym.')
+    expect(s.incidents[0].location?.value).toBe('Bar główny')
+    expect(docToPlainText(s.sections.bar!.doc)).toBe('')
+    expect(s.notes[0]).toMatchObject({ text: 'bójka przy barze głównym', status: 'processed', routedTo: [{ kind: 'incident', incidentId }] })
+    expect(s.notes[0]).not.toHaveProperty('editedFrom')
+  })
+
+  it('a failed edit keeps the old report text; retry goes through the edit again', async () => {
+    const { useShift, req } = await load()
+    req.mockResolvedValueOnce({ operations: [{ op: 'appendToSection', key: 'bar', paragraphs: ['Stare.'] }], source: 'ai' })
+    await useShift.getState().submitNote('stare', [])
+    const id = useShift.getState().shift.notes[0].id
+    req.mockRejectedValueOnce(new Error('boom'))
+    await useShift.getState().editNote(id, 'nowe')
+    let s = useShift.getState().shift
+    expect(s.notes[0]).toMatchObject({ text: 'nowe', status: 'failed', editedFrom: 'stare' })
+    expect(docToPlainText(s.sections.bar!.doc)).toBe('Stare.')
+    req.mockResolvedValueOnce({ operations: [{ op: 'appendToSection', key: 'bar', paragraphs: ['Nowe.'] }], source: 'ai' })
+    await useShift.getState().retryNote(id)
+    expect(req.mock.calls[2][1].editing?.previousText).toBe('stare')
+    s = useShift.getState().shift
+    expect(docToPlainText(s.sections.bar!.doc)).toBe('Nowe.')
+    expect(s.notes[0].editedFrom).toBeUndefined()
+  })
+
+  it('editNote does nothing for unchanged text, a pending note, or after sending', async () => {
+    const { useShift, req } = await load()
+    req.mockResolvedValue({ operations: [], source: 'ai' })
+    await useShift.getState().submitNote('a', [])
+    const id = useShift.getState().shift.notes[0].id
+    await useShift.getState().editNote(id, ' a ')
+    expect(req).toHaveBeenCalledTimes(1)
+    useShift.getState().send()
+    await useShift.getState().editNote(id, 'b')
+    expect(useShift.getState().shift.notes[0].text).toBe('a')
+  })
+
   it('retryNote re-requests and processes a failed note', async () => {
     const { useShift, req } = await load()
     req.mockRejectedValueOnce(new Error('boom'))

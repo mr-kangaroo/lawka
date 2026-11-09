@@ -26,6 +26,8 @@ export type AiContext = {
   sections: Array<{ key: SectionKey; text: string; hasManagerBlocks: boolean }>
   openGaps: GapRef[]
   answeringGap?: GapRef
+  /** The manager edited this note; it was filed before as `previousText` (into `incidentIds`, if any). */
+  editing?: { previousText: string; incidentIds: string[] }
 }
 
 const toRef = (g: Pick<DerivedGap, 'id' | 'question' | 'target'>): GapRef => ({
@@ -74,6 +76,16 @@ export function buildContext(shift: Shift, note: Note, now: Date): AiContext {
     sections,
     openGaps: open.map(toRef),
     ...(answeringGap ? { answeringGap } : {}),
+    ...(note.editedFrom !== undefined
+      ? {
+          editing: {
+            previousText: note.editedFrom,
+            incidentIds: note.routedTo
+              .filter((t) => t.kind === 'incident' && shift.incidents.some((i) => i.id === t.incidentId))
+              .map((t) => (t as { incidentId: string }).incidentId),
+          },
+        }
+      : {}),
   }
 }
 

@@ -20,6 +20,18 @@ test('full shift flow: journal, possible incident, report, undo, send', async ({
   await note.press('Enter')
   await expect(page.getByText('Incydent #2', { exact: true })).toBeVisible()
 
+  // Edit that note: Anuluj restores it, Zapisz saves the new text and files it again (no duplicate).
+  await page.getByRole('button', { name: 'Edytuj notatkę: 23:10 awantura na bramce' }).click()
+  const editBox = page.getByRole('textbox', { name: 'Edytuj notatkę' })
+  await editBox.fill('23:15 awantura na bramce')
+  await page.getByRole('button', { name: 'Anuluj' }).click()
+  await expect(page.getByText('23:10 awantura na bramce')).toBeVisible()
+  await page.getByRole('button', { name: 'Edytuj notatkę: 23:10 awantura na bramce' }).click()
+  await editBox.fill('23:15 awantura na bramce')
+  await page.getByRole('button', { name: 'Zapisz' }).click()
+  await expect(page.getByText('23:15 awantura na bramce')).toBeVisible()
+  await expect(page.getByText('Incydent #2', { exact: true })).toBeVisible()
+
   // Raport: 3 incidents plus the possible one from 01:48; confirming it makes it a 4th incident.
   await reportTab.click()
   await expect(incidents).toHaveCount(3)

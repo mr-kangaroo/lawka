@@ -41,6 +41,7 @@ const BodySchema = z.object({
     sections: list(z.looseObject({ key: short, text: z.string().max(TEXT_MAX) })),
     openGaps: list(GapRefSchema),
     answeringGap: GapRefSchema.optional(),
+    editing: z.looseObject({ previousText: z.string().max(NOTE_MAX), incidentIds: list(short) }).optional(),
   }),
 })
 
@@ -72,6 +73,8 @@ export async function POST(request: Request): Promise<Response> {
     console.warn(`[process-note] AI failed: ${errorType(err)}; trying fallback`)
   }
   if (operations) return Response.json({ operations, source: 'ai' })
+  // The scripted fallback cannot tell an edit from a new note and would duplicate incidents.
+  if (context.editing) return Response.json({ error: 'unprocessable' }, { status: 422 })
 
   const fallback = fallbackOperations(note, context)
   if (fallback) return Response.json({ operations: fallback, source: 'fallback' })

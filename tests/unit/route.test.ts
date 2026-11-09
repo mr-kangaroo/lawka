@@ -33,6 +33,11 @@ describe('POST /api/process-note', () => {
     })
   })
 
+  it('never uses the scripted fallback for an edited note', async () => {
+    const res = await post(body({ text: 'bójka przy barze' }, { editing: { previousText: 'bójka', incidentIds: ['i1'] } }))
+    expect(res.status).toBe(422)
+  })
+
   it('rejects oversized input', async () => {
     expect((await post(body({ text: 'x'.repeat(4001) }))).status).toBe(400)
     expect((await post(body({}, { sections: [{ key: 'bar', text: 'x'.repeat(8001), hasManagerBlocks: false }] }))).status).toBe(400)

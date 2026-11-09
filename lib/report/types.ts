@@ -15,6 +15,7 @@ export type Note = {
   attachments: Attachment[]
   answersGapId?: string // the note answers a question chip
   fromReport?: boolean // written in the Raport tab (a correction or an answer): shown without a time
+  editedFrom?: string // text before the manager's edit, until the edited note has been filed again
   status: 'pending' | 'processed' | 'failed'
   routedTo: RouteTarget[] // targets for the routing tag, deduped, in order
 }

@@ -93,6 +93,11 @@ Do not add a gap whose question is already in context.openGaps for the same targ
   (for an incident target) or appendToSection (for a section target) with ONE natural Polish sentence that combines
   the question and the answer (e.g. question "Czy wezwano policję?" + answer "nie" → "Policja nie była wzywana."),
   plus resolveGap with answeringGap.id. If the answer also gives a field value (time, location, type), emit updateIncident too.
+- When context.editing is present, the manager has edited a note that was already filed. Its earlier version is
+  editing.previousText. The paragraphs and incident descriptions written from it alone have been removed, so write
+  them again from the new text. For every incident in editing.incidentIds, NEVER addIncident: use updateIncident for
+  changed type, time or location, and appendToIncident for the description only if that incident's description
+  in context does not already say it. Emit setSummary if the overall picture changed.
 - If the note has nothing to record, return { "operations": [] }.`
 }
 

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { buildContext, requestOperations } from '@/lib/ai/client'
 import { applyOperations } from '@/lib/report/operations'
+import { retractNote } from '@/lib/report/retract'
 import { appendBlocks, emptyDoc, paragraphsToBlocks } from '@/lib/report/rich'
 import { createDemoShift, createEmptyShift } from '@/lib/report/seed'
 import type {
@@ -28,6 +29,8 @@ export type ShiftState = {
     opts?: { answersGapId?: string },
   ): Promise<void>
   retryNote(noteId: string): Promise<void>
+  /** Saves a new text for a note and files it again (spec §4.2). */
+  editNote(noteId: string, text: string): Promise<void>
 
   setTab(tab: Tab): void
   setDate(date: string): void
@@ -117,12 +120,26 @@ export const useShift = create<ShiftState>()(
         const shift = get().shift
         const note = shift.notes.find((n) => n.id === noteId)
         if (!note) return
+        // An edited note replaces what its earlier version wrote; nothing changes unless the AI succeeds.
+        const editing = note.editedFrom !== undefined
+        const base = (s: Shift) => (editing ? retractNote(s, noteId) : s)
         try {
-          const context = buildContext(shift, note, new Date())
+          const context = buildContext(base(shift), note, new Date())
           const { operations } = await requestOperations(note, context)
           const cur = get().shift
           if (cur.sentAt || !cur.notes.some((n) => n.id === noteId)) return
-          set({ shift: applyOperations(cur, operations, noteId, nowISO(), newId) })
+          const next = applyOperations(base(cur), operations, noteId, nowISO(), newId)
+          if (editing) {
+            const n = next.notes.find((x) => x.id === noteId)!
+            delete n.editedFrom
+            // Keep the incidents it was filed to, even when the edit changed nothing there.
+            for (const id of context.editing?.incidentIds ?? []) {
+              const exists = next.incidents.some((i) => i.id === id)
+              if (exists && !n.routedTo.some((t) => t.kind === 'incident' && t.incidentId === id))
+                n.routedTo.unshift({ kind: 'incident', incidentId: id })
+            }
+          }
+          set({ shift: next })
         } catch {
           const cur = get().shift
           if (cur.sentAt || !cur.notes.some((n) => n.id === noteId)) return
@@ -169,6 +186,20 @@ export const useShift = create<ShiftState>()(
           if (!note || note.status !== 'failed' || get().shift.sentAt) return
           edit((s) => {
             s.notes.find((n) => n.id === noteId)!.status = 'pending'
+          })
+          await processNote(noteId)
+        },
+
+        async editNote(noteId, text) {
+          const trimmed = text.trim()
+          const note = get().shift.notes.find((n) => n.id === noteId)
+          if (!note || get().shift.sentAt || note.status === 'pending') return
+          if (trimmed === note.text || (!trimmed && note.attachments.length === 0)) return
+          edit((s) => {
+            const n = s.notes.find((x) => x.id === noteId)!
+            n.editedFrom ??= n.text
+            n.text = trimmed
+            n.status = 'pending'
           })
           await processNote(noteId)
         },
