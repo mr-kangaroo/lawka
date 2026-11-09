@@ -178,7 +178,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
   3. **Publiczność i bezpieczeństwo** (audience and safety): crowd size, queues, crowding, safety concerns.
   4. **Ochrona** (security)
   5. **Usterki i sprzęt** (faults and equipment)
-- **An empty fixed section** (3–5) shows a muted prompt ("Co z ochroną? Napisz w notatce albo potwierdź.", what about security? write a note or confirm) and a dashed **[✓ Bez uwag]** button on the right of the section heading. Until it's filled or confirmed, it's an **optional** gap (not counted). Clicking writes "Bez uwag." as a manager-authored line.
+- **An empty fixed section** (3–5) shows a muted prompt ("Dodaj szczegóły dotyczące ochrony", add security details; every section has one of this kind) and a dashed **[✓ Bez uwag]** button on the right of the section heading. Until it's filled or confirmed, it's an **optional** gap (not counted). Clicking writes "Bez uwag." as a manager-authored line.
 - **Conditional sections** (in the brief's order, after the fixed ones): Ocena bramkarzy (door staff rating), Artyści i ekipa (artists and crew), Produkcja / przebieg / otwarcie drzwi (production, running order, door opening), Bar, Kuchnia (kitchen), Dostawcy zewnętrzni (external suppliers), Imprezy prywatne (private events), Stany magazynowe (stock).
   - They appear when the AI files content there, or when the manager adds one from the hints below.
   - Ocena bramkarzy stays separate from Ochrona, as in the brief.

@@ -44,10 +44,19 @@ export const HINT_LABEL_OVERRIDES: Partial<Record<SectionKey, string>> = {
   production: 'Produkcja / przebieg',
 }
 
+/** Muted placeholder of an empty section (every section but the summary). */
 export const EMPTY_SECTION_PROMPTS: Partial<Record<SectionKey, string>> = {
-  security: 'Co z ochroną? Napisz w notatce albo potwierdź.',
-  audience: 'Co z publicznością? Napisz w notatce albo potwierdź.',
-  maintenance: 'Jakieś usterki? Napisz w notatce albo potwierdź.',
+  audience: 'Dodaj szczegóły dotyczące publiczności i bezpieczeństwa gości',
+  security: 'Dodaj szczegóły dotyczące ochrony',
+  maintenance: 'Dodaj szczegóły dotyczące usterek i sprzętu',
+  doorStaff: 'Dodaj ocenę pracy bramkarzy',
+  artists: 'Dodaj szczegóły dotyczące artystów i ekipy',
+  production: 'Dodaj szczegóły dotyczące produkcji, przebiegu i otwarcia drzwi',
+  bar: 'Dodaj szczegóły dotyczące baru',
+  kitchen: 'Dodaj szczegóły dotyczące kuchni',
+  suppliers: 'Dodaj szczegóły dotyczące dostawców zewnętrznych',
+  privateEvents: 'Dodaj szczegóły dotyczące imprez prywatnych',
+  stock: 'Dodaj informacje o stanach magazynowych',
 }
 
 export const INCIDENT_TYPES: string[] = [

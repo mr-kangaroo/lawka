@@ -57,7 +57,7 @@ export function SectionBlock({ sectionKey, readOnly, autoFocus, className }: Sec
   let body
   if (empty && readOnly) {
     body = <p className="text-muted-foreground">—</p>
-  } else if (empty && prompt && !editing) {
+  } else if (empty && prompt && !editing && !autoFocus) {
     body = (
       <button
         type="button"
