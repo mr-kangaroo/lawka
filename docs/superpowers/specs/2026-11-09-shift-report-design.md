@@ -140,7 +140,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
     - Odmowa wejścia (refused entry)
     - Interwencja policji (police intervention)
     - Inne (other)
-  - **Time:** opens a **time picker popover** (HH:MM in 5-minute steps, plus typing an exact time). An approximate time is shown in amber, with an amber underline, as "ok. 01:00" ("around 01:00").
+  - **Time:** opens a **time picker popover** (HH:MM in 5-minute steps, plus typing an exact time). An approximate time is shown in amber, with an amber underline, as **"? 01:00"**: a bold question mark before the time marks it as an estimate.
   - **Place:** opens a popover listing the venue's areas, plus "Inne…" (other) for free text:
     - Wejście / bramka (entrance / door)
     - Szatnia (cloakroom)
