@@ -115,7 +115,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
   - `processed`: the routing tag.
   - `failed`: "Nie udało się uporządkować · [Ponów]" (couldn't organise · retry).
   - `waiting`: "czeka na Twoją odpowiedź ↓" (waiting for your answer), in amber, while an AI question about it is open.
-- **AI question card** (above the input, in both tabs): "Pytanie do notatki z 01:48 · <question>" (question about the 01:48 note), with 0–3 quick replies and "…albo odpowiedz poniżej" (or answer below). While the card is open, typing in the input answers it (`replyTo`). The answer is a journal entry, processed like any other. When several questions are open, they're shown one at a time, oldest first.
+- **AI question card** (above the input, in both tabs): "Pytanie do notatki z 01:48 · <question>" (question about the 01:48 note), with 0–3 quick replies and an **"Odpowiedz"** (reply) button. Notes typed in the input are **independent by default**. Clicking "Odpowiedz" switches the input into reply mode: a chip reads "Odpowiadasz na pytanie z HH:MM" (you're answering the question from HH:MM), with × to cancel, and the next note is sent as the answer (`replyTo`). When several questions are open, they're shown one at a time, oldest first. *(Changed during build: auto-binding every typed note as the answer recorded unrelated notes as answers.)*
 - **Input:**
   - Placeholder in Dziennik: "Co się dzieje? Pisz jak na czacie — np. „23:10 awantura na bramce"" (what's happening? write as in a chat, e.g. "23:10 row at the door").
   - Placeholder in Raport: "Dopisz coś albo popraw — np. „incydent 2 był o 01:05"" (add something or correct it, e.g. "incident 2 was at 01:05").
