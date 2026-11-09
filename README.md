@@ -2,7 +2,7 @@
 
 Ławka is a prototype of an AI-assisted shift report ("Raport ze zmiany") for night-club managers. During the shift the manager jots down quick, messy notes in Polish; the AI files them into a structured, editable report, so that at 3 a.m. the report is already nearly done and only needs a review and "Wyślij raport". The UI is in Polish, the code in English.
 
-**Live:** _link coming soon_
+**Live:** https://lawka-marekzerniks-projects.vercel.app
 
 ## Run it
 
