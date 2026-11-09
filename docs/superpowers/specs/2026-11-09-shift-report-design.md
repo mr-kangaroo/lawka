@@ -174,7 +174,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 ### 4.5 Report: sections
 - **Fixed sections, always shown, in this order:**
   1. **Podsumowanie** (summary): drafted by the AI.
-  2. **Incydenty** (incidents): when there are none, it shows "Nie zgłoszono żadnych incydentów." (no incidents reported) and an amber **[Potwierdź: brak incydentów]** (confirm: no incidents) button. This is a **required** gap until clicked. Clicking writes "Brak incydentów w trakcie zmiany." (no incidents during the shift) as a manager-authored line. Adding an incident later removes that line.
+  2. **Incydenty** (incidents): when there are none, it looks like the other empty sections: "Nie zgłoszono żadnych incydentów. + Dodaj incydent" (the add button inline), and a dashed **[✓ Brak zdarzeń]** (no events) button on the right of the heading confirms it. With incidents, "+ Dodaj incydent" sits on the right of the heading instead. This is a **required** gap until clicked. Clicking writes "Brak incydentów w trakcie zmiany." (no incidents during the shift) as a manager-authored line. Adding an incident later removes that line.
   3. **Publiczność i bezpieczeństwo** (audience and safety): crowd size, queues, crowding, safety concerns.
   4. **Ochrona** (security)
   5. **Usterki i sprzęt** (faults and equipment)
