@@ -34,9 +34,9 @@ async function mockProcessNote(page: Page) {
 
 /** Each test gets a fresh context (empty localStorage, so the demo shift seeds) and the AI route mocked. */
 export const test = base.extend({
-  page: async ({ page }, use) => {
+  page: async ({ page }, provide) => {
     await mockProcessNote(page)
-    await use(page)
+    await provide(page)
   },
 })
 
