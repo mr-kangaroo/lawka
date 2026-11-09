@@ -114,7 +114,6 @@ export function IncidentBlock({
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <span className={cn('mr-0.5 font-semibold', suspected ? 'text-required' : 'text-foreground')}>
           #{number}
-          {suspected && <span aria-hidden>?</span>}
         </span>
         <InlineField
           label={`Typ zdarzenia: ${type ?? 'brak'}`}
