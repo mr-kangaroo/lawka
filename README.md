@@ -22,15 +22,15 @@ Without a key the app still runs, but only partly: a keyword-based fallback hand
 - **One input:** it always adds a note to the journal, in both tabs. Corrections are notes too.
 - **Built continuously in the background:** one note at a time, so closing the shift never waits on a 30 s generation.
 - **Structured data under a document-like UI:** fixed sections, incidents as records, rich text only inside sections. Stored as JSON, never one markdown blob.
-- **Manual edits always win:** the AI never changes text or a field the manager has touched; notes are never edited or deleted.
+- **Manual edits always win:** the AI never changes text or a field the manager has touched. Notes are never deleted; editing one files it again, replacing only what the AI wrote from it.
 - **Gaps have weight:** required (amber, counted in the badge) or optional (dashed, ignored in the count). The legal minimum for an incident (type, time, place, description) is enforced by code.
-- **Explicit reply mode:** AI questions sit in a card above the input with quick replies; typing answers one only after "Odpowiedz".
+- **No questions in the journal:** the journal is for throwing thoughts in. When the AI isn't sure a note is an incident, it adds a possible incident to the report to confirm or remove there.
 - **Voice dictation:** a microphone button fills the input in Polish through the Web Speech API (dictation in Chrome/Safari); it never sends on its own.
 - **Free tier, no backend:** Gemini free tier through the Vercel AI SDK with a scripted fallback for 503s; state in localStorage.
 
 ## How the AI works
 
-Each note is sent to `/api/process-note` and the model returns a list of **operations** (add incident, append to section, add or resolve a gap, ask a question), not a whole report. `applyOperations` applies them to the shift, skipping anything the manager edited by hand, so nothing can be silently dropped. If the model fails or times out, the keyword-based fallback handles what it can; any other note is marked as failed and can be retried. Model: `gemini-3.1-flash-lite`, about 2 s per note.
+Each note is sent to `/api/process-note` and the model returns a list of **operations** (add or update an incident, possibly flagged as unconfirmed; append to a section; add or resolve a gap), not a whole report. `applyOperations` applies them to the shift, skipping anything the manager edited by hand, so nothing can be silently dropped. If the model fails or times out, the keyword-based fallback handles what it can; any other note is marked as failed and can be retried. Model: `gemini-3.1-flash-lite`, about 2 s per note.
 
 ## Co dalej
 
