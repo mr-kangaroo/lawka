@@ -87,8 +87,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 ```
 ┌ [← Wróć] │ Start 20:00 · (● Zmiana trwa)              ⚠ 3 wymagane · 2 warto dodać   [Zamknij zmianę] ┐
 ├────────────── Notatki ──────────────┬──────────────────────── Raport ──────────────────────────────────┤
-│ 21:15 note text                     │                                       ● wymagane  ◌ warto dodać     │
-│       ✦ Publiczność · Imprezy pryw. │                                                                    │
+│ 21:15 note text                     │       ✦ Publiczność · Imprezy pryw. │                                                                    │
 │ 22:41 note text  [IMG_2231.jpg]     │ Raport ze zmiany                                                   │
 │       ✦ Incydent #1                 │ 📅 Data zmiany   pt, 8 lis 2026 → sob, 9 lis  ·  👤 Autor  (KN) Kasia Nowak │
 │ 01:48 unclear note                  │                                                                    │
@@ -173,7 +172,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 - **Chips:**
   - `required`: amber fill, bolder text.
   - `optional`: dashed grey outline, muted text.
-  - A legend sits in a thin bar above the report, aligned right: "● wymagane · ◌ warto dodać" (required · worth adding).
+  - There is no legend. The two chip styles plus the header count ("3 wymagane · 2 warto dodać") explain themselves.
 - **Clicking a chip opens an inline answer field** in the incident or section, pre-filled with the AI's suggestion and a reason when one exists (for example "AI: w notatce „koło 1", zapisana 01:30 — popraw, jeśli wiesz dokładniej", meaning "the note says 'around 1', recorded at 01:30; correct it if you know better").
   - A gap tied to a field (time, place, …) writes that field.
   - A question gap ("Czy wezwano policję?", "were the police called?") stores the answer as a Q&A line.
