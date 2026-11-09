@@ -142,6 +142,31 @@ describe('applyOperations', () => {
     expect(out.sections.bar?.attachments).toEqual([att])
   })
 
+  it('attachments follow updateIncident when no incident was created', () => {
+    const att = { id: 'a1', name: 'f.jpg', kind: 'image' as const }
+    const s = shift({
+      notes: [note({ attachments: [att] })],
+      incidents: [incident({ type: { value: 'T', prov: mgr } })],
+    })
+    const out = apply(s, [
+      { op: 'updateIncident', incidentId: 'i1', type: 'Inny' },
+      { op: 'appendToSection', key: 'bar', paragraphs: ['A'] },
+    ])
+    expect(out.incidents[0].attachments).toEqual([att])
+    expect(out.sections.bar?.attachments).toEqual([])
+  })
+
+  it('appendToSection with empty paragraphs is a no-op', () => {
+    const att = { id: 'a1', name: 'f.jpg', kind: 'image' as const }
+    const out = apply(shift({ notes: [note({ attachments: [att] })] }), [
+      { op: 'appendToSection', key: 'bar', paragraphs: [] },
+      { op: 'appendToSection', key: 'kitchen', paragraphs: ['K'] },
+    ])
+    expect(out.sections.bar).toBeUndefined()
+    expect(out.notes[0].routedTo).toEqual(['Kuchnia'])
+    expect(out.sections.kitchen?.attachments).toEqual([att])
+  })
+
   it('replyTo note marks its question answered; answersGapId note marks its gap answered', () => {
     const s = shift({
       notes: [note({ replyTo: 'q1', answersGapId: 'g1' })],

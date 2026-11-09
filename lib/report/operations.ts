@@ -155,6 +155,7 @@ export function applyOperations(
       case 'updateIncident': {
         const inc = s.incidents.find((i) => i.id === op.incidentId)
         if (!inc) break
+        giveAttachmentsToIncident(inc)
         let changed = false
         if (op.type !== undefined) {
           const f = setField(inc.type, op.type)
@@ -184,6 +185,7 @@ export function applyOperations(
         break
       }
       case 'appendToSection': {
+        if (op.paragraphs.length === 0) break
         const sec = getSection(op.key)
         sec.doc = appendBlocks(sec.doc, paragraphsToBlocks(op.paragraphs, attrs()))
         firstFedSection ??= op.key
