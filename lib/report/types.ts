@@ -5,6 +5,9 @@ export type Field<T> = { value: T; prov: Provenance }
 
 export type Attachment = { id: string; name: string; kind: 'image' | 'video' | 'document' } // fake
 
+/** Where a note was filed. Labels ("Incydent #2") are derived at render time by `routeLabel`. */
+export type RouteTarget = { kind: 'incident'; incidentId: string } | { kind: 'section'; key: SectionKey }
+
 export type Note = {
   id: string
   createdAt: ISO
@@ -13,7 +16,7 @@ export type Note = {
   replyTo?: string // AiQuestion.id: the note answers an AiQuestion
   answersGapId?: string // the note answers a question chip
   status: 'pending' | 'processed' | 'failed'
-  routedTo: string[] // labels for the routing tag
+  routedTo: RouteTarget[] // targets for the routing tag, deduped, in order
 }
 
 // sourcePhrase: the manager's words, e.g. "koło 1", quoted in the tooltip.

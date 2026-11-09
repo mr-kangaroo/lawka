@@ -288,7 +288,8 @@ export const useShift = create<ShiftState>()(
     },
     {
       name: 'lawka:v1',
-      version: 1,
+      // v2: Note.routedTo holds RouteTarget objects (v1 stored label strings). Older data resets to the demo.
+      version: 2,
       storage: safeStorage,
       partialize: (s) => ({ shift: s.shift, tab: s.tab }),
       migrate: () => ({ shift: createDemoShift(), tab: 'journal' as Tab }),

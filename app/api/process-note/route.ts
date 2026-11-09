@@ -18,7 +18,7 @@ const BodySchema = z.object({
     text: z.string(),
     attachments: z.array(z.unknown()),
     status: z.enum(['pending', 'processed', 'failed']),
-    routedTo: z.array(z.string()),
+    routedTo: z.array(z.looseObject({ kind: z.enum(['incident', 'section']) })),
     replyTo: z.string().optional(),
     answersGapId: z.string().optional(),
   }),
