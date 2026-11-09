@@ -114,10 +114,14 @@ export function JournalEntry({ note, routeLabels }: EntryProps) {
         )}
         {/* The status line and the edit buttons share one cell, so its height never changes between them. */}
         <div className="grid [&>*]:col-start-1 [&>*]:row-start-1">
-          <div aria-hidden={editing || undefined} className={cn('flex min-h-6 flex-wrap items-center gap-2.5', editing && 'invisible')}>
-            {note.attachments.map((a) => (
-              <AttachmentChip key={a.id} attachment={a} />
-            ))}
+          <div aria-hidden={editing || undefined} className={cn('flex min-h-6 flex-col justify-center gap-1.5', editing && 'invisible')}>
+            {note.attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {note.attachments.map((a) => (
+                  <AttachmentChip key={a.id} attachment={a} />
+                ))}
+              </div>
+            )}
             <EntryStatus note={note} routeLabels={routeLabels} />
           </div>
           {editing && (

@@ -17,6 +17,8 @@ describe('prompt', () => {
     expect(p).toMatch(/sourcePhrase/)
     expect(p).toMatch(/answeringGap/)
     expect(p).toMatch(/suspected: true/)
+    expect(p).toMatch(/Only confirmed facts/)
+    expect(p).toMatch(/gibberish/)
     expect(p).not.toMatch(/askQuestion|answeringQuestion/)
     expect(p).toMatch(/updateIncident/)
     expect(p).toContain('"new:1"')

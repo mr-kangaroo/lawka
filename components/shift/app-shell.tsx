@@ -11,8 +11,8 @@ import { AppHeader } from './app-header'
 import { SendDialog } from './send-dialog'
 
 const PLACEHOLDERS = {
-  journal: 'Co się dzieje? Pisz jak na czacie — np. „23:10 awantura na bramce”',
-  report: 'Dopisz coś albo popraw — np. „incydent 2 był o 01:05”',
+  journal: 'Pisz tutaj...',
+  report: 'Dopracuj raport...',
 } as const
 
 /** Phone placeholders: the spec copy up to the dash, as in the phone design. */

@@ -53,7 +53,7 @@ function ShiftTabs() {
         Raport
         {required > 0 && (
           <Badge
-            className="h-[18px] min-w-[18px] border-required-border bg-required-bg px-1.5 text-[11px] font-semibold text-required"
+            className="h-[18px] min-w-[18px] justify-center border-required-border bg-required-bg px-1 text-[11px] font-semibold text-required tabular-nums"
           >
             {required}
             <span className="sr-only"> do uzupełnienia</span>

@@ -103,13 +103,13 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 
 - **Default tab:** Dziennik while the shift is running. The Raport tab is available at any time, because the brief says not to force a choice.
 - **"Zobacz raport"** (Dziennik tab) switches to the Raport tab. **"Wyślij raport"** (Raport tab) opens the review (§4.7).
-- **Tab badge:** the number of required gaps, in amber. There's no other count in the header.
+- **Tab badge:** the number of required gaps, in amber (an 18 px circle for one digit, a pill from two). There's no other count in the header.
 - **Phone:** the same structure. The tabs span the full width under a compact header (back icon, a shorter status "● od 20:00" so the primary button fits at 360 px). Section headings are 18 px. Input buttons are ≥44 px. After a note is filed, a short confirmation appears above the input ("Zapisano jako Incydent #1 · 22:40", saved as incident #1).
 
 ### 4.2 Dziennik zmiany (journal) and the input
 - **No date/author line** above the entries; those live in the report's properties.
 - **Empty journal** (new shift): a centred empty state: "Zapisuj, co dzieje się na zmianie" (log what happens on the shift) and "Pisz krótko, jak na czacie: godzina, co się stało i gdzie. AI na bieżąco ułoży z tego raport, a gdy czegoś zabraknie, dopyta." (write briefly, as in a chat: the time, what happened and where; the AI builds the report as you go and asks when something is missing).
-- **Each entry** shows its recorded time (HH:MM) in a left column, the text, and attachment chips.
+- **Each entry** shows its recorded time (HH:MM) in a left column, the text, attachment chips on their own line, and the routing tag under them.
 - **Routing tag** under processed entries: a muted "Incydent #1", "Możliwy incydent #3" or "Publiczność i bezpieczeństwo · Imprezy prywatne" (no arrow; the summary is never listed). This is the only place where AI work is labelled. It shows where a note went, not who wrote what.
 - **Entry states:**
   - `pending`: "porządkuję…" (organising) with a spinner.
@@ -362,6 +362,8 @@ Plus report-level rule gaps:
     - required: injury → "was help given?"; violence or theft → "were police called?"; medical help → "who gave first aid?"
     - optional: a more precise location, witnesses, attaching evidence
   - never ask about a note; an unclear possible incident is added with suspected: true
+  - the summary holds only confirmed facts: no possible incidents, estimates or open gaps (the report's controls show those)
+  - never comment on the notes themselves; gibberish or test notes record nothing
   - never invent facts
   - mark approximate times `approx: true`
   - set the summary in 2–4 sentences

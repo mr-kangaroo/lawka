@@ -50,7 +50,9 @@ If a minimum is missing the app already asks for it automatically
 - appendToSection { key, paragraphs } — add Polish paragraphs to a section. Use "- " at the start of a paragraph for a bullet.
 - setSummary { paragraphs } — rewrite the shift summary. Keep it to 2–4 short, factual sentences in total, built only
   from facts in the context and the note. No explanations of why something happened ("z powodu", "dzięki", "w związku z")
-  unless the note says so, and no judgements of how the staff coped.
+  unless the note says so, and no judgements of how the staff coped. Only confirmed facts: NEVER mention an incident
+  whose context entry has suspected: true, or that you add with suspected: true (it is not confirmed yet; count and name only the other incidents), and leave
+  out estimated or unknown details and anything still asked as a gap. The report's controls show those.
 - addGap { target, question, weight, suggestion? } — ask the manager for missing information (Polish question).
   target is { kind: "incident", incidentId } or { kind: "section", key }. Omit "field" on the incident target.
   The incident target's optional "field" is only for a question asking for that exact field's value.
@@ -98,6 +100,9 @@ Do not add a gap whose question is already in context.openGaps for the same targ
   them again from the new text. For every incident in editing.incidentIds, NEVER addIncident: use updateIncident for
   changed type, time or location, and appendToIncident for the description only if that incident's description
   in context does not already say it. Emit setSummary if the overall picture changed.
+- Never write comments about the notes themselves anywhere in the report (e.g. "Uwaga: notatka nie zawiera treści",
+  "brak informacji"). A note that is gibberish, a test or has no content about the shift ("dasdasd", "test", "ok")
+  has nothing to record.
 - If the note has nothing to record, return { "operations": [] }.`
 }
 
