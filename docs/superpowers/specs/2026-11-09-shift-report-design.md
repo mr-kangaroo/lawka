@@ -37,7 +37,7 @@ The brief covers **creating one report only**. Reading, collecting, listing or e
 | D1 | **One live report per shift**, open all night: quick notes during the shift plus the close at 3 a.m. on one screen. | Answers "incidents recorded close to the moment" without adding a second flow. |
 | D2 | **Layout: a notes feed (left) next to the report (right).** On a phone the two become tabs. | Resolves the brief's tension between guided and free text without a mode choice. Latency doesn't block the manager. |
 | D3 | **Structured underneath, a document on the surface.** The report looks and edits like one document, but the data stays structured. There are fixed fields (date, author), **fixed section headings** that can't be renamed, deleted or invented, **incidents as structured records**, and rich text only *inside* sections. Stored as JSON keyed by section, never as one markdown blob. | Evidence for compliance needs consistency, validation and queryable data. The manager needs it to not feel like a form. |
-| D4 | **Each section has its own small rich-text editor** (Tiptap: bold, italic, bullet list), styled so the sections read as one continuous document. A shared toolbar acts on whichever section has focus. | Simpler and safer than one editor for the whole report: the structure can't break, the AI writes into a known place, and authorship is tracked per paragraph. |
+| D4 | **Each section has its own small rich-text editor** (Tiptap: bold, italic, bullet list), styled so the sections read as one continuous document. There is **no formatting toolbar**: formatting is by keyboard shortcuts and markdown-style typing (see §4.5). | Simpler and safer than one editor for the whole report: the structure can't break, the AI writes into a known place, and authorship is tracked per paragraph. |
 | D5 | **The AI asks questions inside the feed**, under the unclear note, with quick replies and a short text field. It only asks when it can't classify a note. | A conversation without turning the app into a chat. |
 | D6 | **Gaps have weight: `required`** (amber, counted in the header) **or `optional`** (grey dashed, not counted). | Not every gap matters equally. "Which toilet?" shouldn't nag. |
 | D7 | **The legal minimum for incidents (type, time, place, description) is enforced by code.** The AI adds context-specific questions with a weight. | Legal requirements must be reliable and testable. |
@@ -87,7 +87,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 ```
 ┌ [← Wróć] │ Start 20:00 · (● Zmiana trwa)              ⚠ 3 wymagane · 2 warto dodać   [Zamknij zmianę] ┐
 ├────────────── Notatki ──────────────┬──────────────────────── Raport ──────────────────────────────────┤
-│ 21:15 note text                     │ [B] [I] [•≡]                         ● wymagane  ◌ warto dodać     │
+│ 21:15 note text                     │                                       ● wymagane  ◌ warto dodać     │
 │       ✦ Publiczność · Imprezy pryw. │                                                                    │
 │ 22:41 note text  [IMG_2231.jpg]     │ Raport ze zmiany                                                   │
 │       ✦ Incydent #1                 │ 📅 Data zmiany   pt, 8 lis 2026 → sob, 9 lis  ·  👤 Autor  (KN) Kasia Nowak │
@@ -164,7 +164,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 
 ### 4.5 Report: sections
 - Fixed headings in the brief's order. **A section appears only when it has content.** Podsumowanie (summary) always appears once there's anything to summarise.
-- The text inside a section is a Tiptap editor (paragraphs, **bold**, *italic*, bullet lists). Click anywhere to type. The toolbar (B, I, list) acts on the focused section. There are **no heading controls**, because headings are structure.
+- The text inside a section is a Tiptap editor (paragraphs, **bold**, *italic*, bullet lists). Click anywhere to type. **No toolbar.** Formatting uses keyboard shortcuts only: **⌘/Ctrl+B** for bold, **⌘/Ctrl+I** for italic, and typing **"- "** or **"* "** at the start of a line (or **⌘/Ctrl+Shift+8**) for a bullet list. These are Tiptap's defaults, so there's no custom code. There are **no heading controls**, because headings are structure.
 - **The suggestions box** sits at the end of the report and is dashed, not part of the report content. It names key sections that haven't been mentioned ("Nic jeszcze o ochronie, barze i stanach magazynowych", nothing yet on security, bar or stock):
   - "+ Ochrona" (security) / "+ Bar" / "+ Stany magazynowe" (stock) add that section with the cursor in it.
   - "Zamknij" dismisses the box for this shift.
@@ -173,7 +173,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 - **Chips:**
   - `required`: amber fill, bolder text.
   - `optional`: dashed grey outline, muted text.
-  - A legend sits next to the toolbar: "● wymagane · ◌ warto dodać" (required · worth adding).
+  - A legend sits in a thin bar above the report, aligned right: "● wymagane · ◌ warto dodać" (required · worth adding).
 - **Clicking a chip opens an inline answer field** in the incident or section, pre-filled with the AI's suggestion and a reason when one exists (for example "AI: w notatce „koło 1", zapisana 01:30 — popraw, jeśli wiesz dokładniej", meaning "the note says 'around 1', recorded at 01:30; correct it if you know better").
   - A gap tied to a field (time, place, …) writes that field.
   - A question gap ("Czy wezwano policję?", "were the police called?") stores the answer as a Q&A line.
@@ -371,7 +371,7 @@ components/
   shift/     Header, CloseDialog, ClosedBanner
   notes/     Feed, NoteItem, AiQuestion, Composer
   report/    ReportPanel, ReportHeader (date, author), IncidentBlock, TypeCombobox,
-             TimePicker, PlacePicker, IncidentMenu, SectionEditor, Toolbar, GapChip, Suggestions
+             TimePicker, PlacePicker, IncidentMenu, SectionEditor, GapChip, Suggestions
 tests/unit  tests/e2e
 ```
 
@@ -379,7 +379,7 @@ tests/unit  tests/e2e
 - `lib/report` is pure: no React, storage or network.
 - The store is the only place state changes.
 - The API route is the only code that knows about Gemini.
-- Tiptap is confined to `SectionEditor`, `Toolbar` and `report/rich.ts`.
+- Tiptap is confined to `SectionEditor` and `report/rich.ts`.
 
 ---
 
