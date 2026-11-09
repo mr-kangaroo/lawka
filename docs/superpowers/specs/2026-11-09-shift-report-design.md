@@ -64,7 +64,7 @@ The brief covers **creating one report only**. Reading, collecting, listing or e
   - Fixed title, shift-date picker and author picker.
   - Incidents as structured blocks: searchable type, time picker, place picker, a rich-text description, attachments, gap chips, a hover menu with duplicate/remove, and "+ Dodaj incydent".
   - Sections with rich text.
-  - Five fixed sections with "Bez uwag" confirmations, conditional sections, and "+ Dodaj sekcję".
+  - Five fixed sections with "Bez uwag" confirmations, conditional sections, and section hints.
 - AI processing of notes into operations, plus follow-up questions.
 - Gap indicators, the header count and answering gaps in place.
 - Close flow: review dialog → "close anyway" → locked report with the closing time.
@@ -99,7 +99,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 │   └──────────────────────────────┘  │ │ description · Q—A lines · [IMG] · gap chips                      │ │
 │ 02:52 note  ⟳ porządkuję…           │ └──────────────────────────────────────────────────────────────────┘ │
 │ ┌ Nowa notatka…     📎 [Dodaj ↵] ┐  │ └───────────────────────────────┘   │ Publiczność i bezp. / Ochrona [Bez uwag] / Usterki / Imprezy pryw.   │
-│                                     │ + Dodaj sekcję                                                      │
+│                                     │ Często w raportach: (+ Bar) (+ Ocena bramkarzy) (+ Produkcja…) +2  │
 └─────────────────────────────────────┴────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -172,10 +172,21 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
   5. **Usterki i sprzęt** (faults and equipment)
 - **An empty fixed section** (3–5) shows a muted prompt ("Co z ochroną? Napisz w notatce albo potwierdź.", what about security? write a note or confirm) and a dashed **[Bez uwag]** button. Until it's filled or confirmed, it's an **optional** gap counted in "warto dodać". Clicking writes "Bez uwag." as a manager-authored line.
 - **Conditional sections** (in the brief's order, after the fixed ones): Ocena bramkarzy (door staff rating), Artyści i ekipa (artists and crew), Produkcja / przebieg / otwarcie drzwi (production, running order, door opening), Bar, Kuchnia (kitchen), Dostawcy zewnętrzni (external suppliers), Imprezy prywatne (private events), Stany magazynowe (stock).
-  - They appear when the AI files content there, or when the manager adds them.
+  - They appear when the AI files content there, or when the manager adds one from the hints below.
   - Ocena bramkarzy stays separate from Ochrona, as in the brief.
 - The text inside a section is a Tiptap editor (paragraphs, **bold**, *italic*, bullet lists). Click anywhere to type. **No toolbar.** Formatting uses keyboard shortcuts only: **⌘/Ctrl+B** for bold, **⌘/Ctrl+I** for italic, and typing **"- "** or **"* "** at the start of a line (or **⌘/Ctrl+Shift+8**) for a bullet list. These are Tiptap's defaults, so there's no custom code. There are **no heading controls**, because headings are structure.
-- **"+ Dodaj sekcję"** (add section) is a quiet text button at the end of the report. It opens a menu of the conditional sections not yet present, and the chosen one appears with the cursor in it. It replaces the earlier AI suggestions box, which fixed sections made redundant.
+- **Section hints at the end of the report:** a muted label "Często w raportach:" (often in reports) followed by dashed pill chips for the **conditional sections not yet present**, in a fixed order of how often they typically appear. The order is static (no analytics):
+  1. Bar
+  2. Ocena bramkarzy
+  3. Produkcja / przebieg
+  4. Stany magazynowe
+  5. Artyści i ekipa
+  6. Kuchnia
+  7. Dostawcy zewnętrzni
+  8. Imprezy prywatne
+  - The first five are shown, and the rest sit behind "+ N więcej" (N more).
+  - Clicking a chip adds that section with the cursor in it, and the chip disappears.
+  - These are hints, not gaps: they're never counted or required.
 
 ### 4.6 Gaps
 - **Field gaps** (missing or estimated type, time, place or description, from the rule in §6.3) are shown **on the field itself**, not as chips: an amber placeholder ("godzina", "miejsce", …) or the amber `? 01:00`, each with an explanatory tooltip. They still count toward "N wymagane".
@@ -383,7 +394,7 @@ components/
   shift/     Header, CloseDialog, ClosedBanner
   notes/     Feed, NoteItem, AiQuestion, Composer
   report/    ReportPanel, ReportHeader (date, author), IncidentBlock, TypeCombobox,
-             TimePicker, PlacePicker, IncidentMenu, SectionEditor, GapChip, AddSectionMenu
+             TimePicker, PlacePicker, IncidentMenu, SectionEditor, GapChip, SectionHints
 tests/unit  tests/e2e
 ```
 
