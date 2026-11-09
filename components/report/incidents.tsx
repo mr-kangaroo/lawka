@@ -54,6 +54,8 @@ export function Incidents() {
             chips={chipsByIncident.get(inc.id) ?? []}
             readOnly={readOnly}
             autoFocus={inc.id === added}
+            // Only for that first mount: a remount (e.g. "Cofnij" after removing it) must not reopen it.
+            onAutoFocused={() => setAdded(null)}
           />
         ))}
       </div>

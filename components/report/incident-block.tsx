@@ -39,13 +39,24 @@ export type IncidentBlockProps = {
   readOnly: boolean
   /** An incident just added by hand: scroll to it and open its type picker. */
   autoFocus?: boolean
+  /** Called once `autoFocus` has been applied on mount. */
+  onAutoFocused?(): void
 }
 
 /**
  * One incident: a sentence-like header (#N type · time · place, each an inline picker), the
  * "dodano o" / ⋯ menu, the rich-text description, attachments and question chips (spec §4.4).
  */
-export function IncidentBlock({ incident, number, startHHMM, fieldGaps, chips, readOnly, autoFocus }: IncidentBlockProps) {
+export function IncidentBlock({
+  incident,
+  number,
+  startHHMM,
+  fieldGaps,
+  chips,
+  readOnly,
+  autoFocus,
+  onAutoFocused,
+}: IncidentBlockProps) {
   const setIncidentField = useShift((s) => s.setIncidentField)
   const setIncidentDescription = useShift((s) => s.setIncidentDescription)
   // An incident added by hand starts with its type picker open (focus goes to its search).
@@ -53,7 +64,9 @@ export function IncidentBlock({ incident, number, startHHMM, fieldGaps, chips, r
   const rootRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
-    if (autoFocus) rootRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    if (!autoFocus) return
+    rootRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    onAutoFocused?.()
     // Only on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
