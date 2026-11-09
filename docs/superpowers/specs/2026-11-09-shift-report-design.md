@@ -60,7 +60,7 @@ The brief covers **creating one report only**. Reading, collecting, listing or e
 
 ### In scope
 - One screen, two tabs, three states (shift running, review before sending, sent/read-only).
-- **Header:** "← Wróć" (back; a placeholder with no action), "● Zmiana trwa · od 20:00" (shift in progress since 20:00), the tabs **[Dziennik zmiany | Raport ③]** (the badge is the required-gap count), and a primary button on the right: "Zobacz raport" (see report) in Dziennik, "Wyślij raport" (send report) in Raport.
+- **Header:** "← Wróć" (back; a placeholder with no action), "● Zmiana trwa · Ndz 8 lis, 20:00" (shift in progress, with its start day and time), the tabs **[Dziennik zmiany | Raport ③]** (the badge is the required-gap count), and a primary button on the right: "Zobacz raport" (see report) in Dziennik, "Wyślij raport" (send report) in Raport.
 - **Dziennik zmiany:** a centred timeline of notes with timestamps, attachment chips, routing tags, and pending/failed/waiting states.
 - **One input** at the bottom of both tabs: text, fake attachments (chips and placeholder thumbnails), 🎤 (stretch), "Dodaj ↵".
 - **Raport:** a centred document:
@@ -88,7 +88,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 ### 4.1 Layout
 
 ```
-┌ ← Wróć  ● Zmiana trwa · od 20:00     [ Dziennik zmiany | Raport ③ ]           [Zobacz raport] ┐
+┌ ← Wróć  ● Zmiana trwa · Ndz 8 lis, 20:00 [ Dziennik zmiany | Raport ③ ]           [Zobacz raport] ┐
 │                                                                                                │
 │                      centred column (journal ~720px / report ~760px)                           │
 │   Dziennik: 21:15 note … → Publiczność i bezpieczeństwo · Imprezy prywatne                     │
@@ -104,7 +104,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 - **Default tab:** Dziennik while the shift is running. The Raport tab is available at any time, because the brief says not to force a choice.
 - **"Zobacz raport"** (Dziennik tab) switches to the Raport tab. **"Wyślij raport"** (Raport tab) opens the review (§4.7).
 - **Tab badge:** the number of required gaps, in amber (an 18 px circle for one digit, a pill from two). An empty shift (no notes yet) shows no badge: "Potwierdź: brak incydentów" counts only after the first note, though the send dialog still asks for it. There's no other count in the header.
-- **Phone:** the same structure. The tabs span the full width under a compact header (back icon, a shorter status "● od 20:00" so the primary button fits at 360 px). Section headings are 18 px. Input buttons are ≥44 px. After a note is filed, a short confirmation appears above the input ("Zapisano jako Incydent #1 · 22:40", saved as incident #1).
+- **Phone:** the same structure. The tabs span the full width under a compact header (back icon, a shorter status "● 8 lis, 20:00" so the primary button fits at 360 px). Section headings are 18 px. Placeholder prompts in the report are muted text at 65% opacity. Input buttons are ≥44 px. After a note is filed, a short confirmation appears above the input ("Zapisano jako Incydent #1 · 22:40", saved as incident #1).
 
 ### 4.2 Dziennik zmiany (journal) and the input
 - **No date/author line** above the entries; those live in the report's properties.

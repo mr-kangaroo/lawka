@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { estimateVagueTime, formatHHMM, minutesFromShiftStart, parseHHMM, timeSlots } from '@/lib/report/time'
+import { estimateVagueTime, formatDayTime, formatHHMM, minutesFromShiftStart, parseHHMM, timeSlots } from '@/lib/report/time'
 
 describe('parseHHMM', () => {
   it('normalizes accepted formats', () => {
@@ -86,5 +86,13 @@ describe('estimateVagueTime', () => {
     expect(est('chwilę temu kłótnia')).toBeNull()
     expect(est('po 300 zł rachunku')).toBeNull()
     expect(est('pobił kolegę')).toBeNull()
+  })
+})
+
+describe('formatDayTime', () => {
+  it('formats the local weekday, day, month and time', () => {
+    expect(formatDayTime(new Date(2026, 10, 9, 19, 41).toISOString())).toBe('Pon 9 lis, 19:41')
+    expect(formatDayTime(new Date(2026, 10, 8, 20, 0).toISOString())).toBe('Ndz 8 lis, 20:00')
+    expect(formatDayTime(new Date(2026, 9, 14, 7, 5).toISOString())).toBe('Śr 14 paź, 07:05')
   })
 })

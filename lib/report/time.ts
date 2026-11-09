@@ -94,3 +94,12 @@ export function estimateVagueTime(text: string, startHHMM: string): { phrase: st
   }
   return null
 }
+
+const WEEKDAYS_SHORT = ['Ndz', 'Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob']
+const MONTHS_SHORT = ['sty', 'lut', 'mar', 'kwi', 'maj', 'cze', 'lip', 'sie', 'wrz', 'paź', 'lis', 'gru']
+
+/** "Pon 9 lis, 19:41": local weekday, day, month and time of an ISO timestamp. */
+export function formatDayTime(iso: ISO): string {
+  const d = new Date(iso)
+  return `${WEEKDAYS_SHORT[d.getDay()]} ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}, ${formatHHMM(iso)}`
+}

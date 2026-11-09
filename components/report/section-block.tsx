@@ -62,7 +62,7 @@ export function SectionBlock({ sectionKey, readOnly, autoFocus, className }: Sec
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className="cursor-text rounded-sm text-left text-muted-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="cursor-text rounded-sm text-left text-muted-foreground/65 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         {prompt}
       </button>
