@@ -114,8 +114,13 @@ export function sectionQuestionGaps(gaps: Gap[], key: SectionKey): DerivedGap[] 
   return gaps.filter((g) => g.status === 'open' && g.target.kind === 'section' && g.target.key === key).map(fromAi)
 }
 
+/**
+ * The tab badge: open required gaps. A shift with no notes yet shows none: "Potwierdź: brak
+ * incydentów" only counts once something has been written (the send dialog still asks for it).
+ */
 export function requiredCount(shift: Shift): number {
-  return openGaps(shift).filter((g) => g.weight === 'required').length
+  const started = shift.notes.length > 0
+  return openGaps(shift).filter((g) => g.weight === 'required' && (started || g.id !== 'rule:no-incidents')).length
 }
 
 export function fieldGap(shift: Shift, incidentId: string, field: IncidentField): DerivedGap | undefined {

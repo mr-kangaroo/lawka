@@ -103,7 +103,7 @@ Copy below is Polish UI text. The English in parentheses is only for the reader 
 
 - **Default tab:** Dziennik while the shift is running. The Raport tab is available at any time, because the brief says not to force a choice.
 - **"Zobacz raport"** (Dziennik tab) switches to the Raport tab. **"Wyślij raport"** (Raport tab) opens the review (§4.7).
-- **Tab badge:** the number of required gaps, in amber (an 18 px circle for one digit, a pill from two). There's no other count in the header.
+- **Tab badge:** the number of required gaps, in amber (an 18 px circle for one digit, a pill from two). An empty shift (no notes yet) shows no badge: "Potwierdź: brak incydentów" counts only after the first note, though the send dialog still asks for it. There's no other count in the header.
 - **Phone:** the same structure. The tabs span the full width under a compact header (back icon, a shorter status "● od 20:00" so the primary button fits at 360 px). Section headings are 18 px. Input buttons are ≥44 px. After a note is filed, a short confirmation appears above the input ("Zapisano jako Incydent #1 · 22:40", saved as incident #1).
 
 ### 4.2 Dziennik zmiany (journal) and the input

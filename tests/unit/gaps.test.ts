@@ -16,6 +16,13 @@ const apply = (s: Shift, ops: Operation[]) => applyOperations(s, ops, 'n1', now,
 const full: Operation = { op: 'addIncident', type: 'Bójka', location: 'Bar', description: 'Opis.', time: { hhmm: '01:00', approx: false } }
 
 describe('gaps', () => {
+  it('an empty shift has no badge count, but the no-incidents confirmation stays a required gap', () => {
+    const empty = shift({ notes: [], noIncidentsConfirmed: false })
+    expect(requiredCount(empty)).toBe(0)
+    expect(openGaps(empty).some((g) => g.id === 'rule:no-incidents' && g.weight === 'required')).toBe(true)
+    expect(requiredCount(shift({ noIncidentsConfirmed: false }))).toBe(1)
+  })
+
   it('a suspected incident asks only "Czy to był incydent?" until confirmed', () => {
     const s = apply(shift(), [{ op: 'addIncident', type: 'Inne', description: 'Coś przy szatni.', suspected: true }])
     const id = s.incidents[0].id
